@@ -1,8 +1,49 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent } from 'react';
+
+// ---------- Types ----------
+
+type QuestionType =
+  | "choice_single"
+  | "choice_single_list"
+  | "text_area"
+  | "chips"
+  | "checkbox_multi";
+
+interface QuestionOption {
+  value: string;
+  label: string;
+  desc?: string;
+  icon?: string;
+  sub?: string;
+}
+
+interface Answers {
+  superpower: string;
+  stage: string;
+  vision: string;
+  commitment: string;
+  cofounder_traits: string[];
+}
+
+type AnswerKey = keyof Answers;
+type AnswerValue = string | string[];
+
+interface Question {
+  id: AnswerKey;
+  step: number;
+  type: QuestionType;
+  question: string;
+  subtext: string;
+  options?: QuestionOption[];
+  placeholder?: string;
+  maxLength?: number;
+  required: boolean;
+  minChoices?: number;
+}
 
 // Dynamic mock data coming from backend or local configuration
-const QUESTIONS_DATA = [
+const QUESTIONS_DATA: Question[] = [
   {
     id: "superpower",
     step: 1,
@@ -73,8 +114,13 @@ const QUESTIONS_DATA = [
   }
 ];
 
+interface DynamicIconProps {
+  name?: string;
+  className?: string;
+}
+
 // Simple lightweight dynamic SVG icon mapping to bypass package restrictions while remaining fully functional
-const DynamicIcon = ({ name, className }) => {
+const DynamicIcon = ({ name, className }: DynamicIconProps) => {
   switch (name) {
     case 'Code':
       return (
@@ -118,25 +164,25 @@ const DynamicIcon = ({ name, className }) => {
 };
 
 export default function CofinderOnboarding() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [answers, setAnswers] = useState<Answers>({
     superpower: "",
     stage: "",
     vision: "",
     commitment: "",
     cofounder_traits: []
   });
-  
-  // Navigation & animation states
-  const [slideDirection, setSlideDirection] = useState("in"); // "in" or "out"
-  const [validationError, setValidationError] = useState("");
-  const [isOnboardingCompleted, setIsOnboardingCompleted] = useState(false);
-  const [isSimulatingLoad, setIsSimulatingLoad] = useState(false);
 
-  const activeQuestion = QUESTIONS_DATA[currentIndex];
+  // Navigation & animation states
+  const [slideDirection, setSlideDirection] = useState<"in" | "out">("in");
+  const [validationError, setValidationError] = useState<string>("");
+  const [isOnboardingCompleted, setIsOnboardingCompleted] = useState<boolean>(false);
+  const [isSimulatingLoad, setIsSimulatingLoad] = useState<boolean>(false);
+
+  const activeQuestion: Question = QUESTIONS_DATA[currentIndex];
   const progressPercent = ((currentIndex + 1) / QUESTIONS_DATA.length) * 100;
 
-  const triggerNavigation = (directionCallback) => {
+  const triggerNavigation = (directionCallback: () => void) => {
     setSlideDirection("out");
     setTimeout(() => {
       directionCallback();
@@ -144,12 +190,13 @@ export default function CofinderOnboarding() {
     }, 150);
   };
 
-  const validateCurrentStep = () => {
-    const currentAnswer = answers[activeQuestion.id];
-    
+  const validateCurrentStep = (): boolean => {
+    const currentAnswer: AnswerValue = answers[activeQuestion.id];
+
     if (activeQuestion.required) {
       if (activeQuestion.type === "checkbox_multi") {
-        if (!currentAnswer || currentAnswer.length < (activeQuestion.minChoices || 1)) {
+        const selected = Array.isArray(currentAnswer) ? currentAnswer : [];
+        if (selected.length < (activeQuestion.minChoices || 1)) {
           setValidationError(`Please select at least ${activeQuestion.minChoices} traits to continue.`);
           return false;
         }
@@ -190,16 +237,16 @@ export default function CofinderOnboarding() {
     }
   };
 
-  const selectSingleOption = (val) => {
+  const selectSingleOption = (val: string) => {
     setAnswers(prev => ({ ...prev, [activeQuestion.id]: val }));
     setValidationError("");
   };
 
-  const toggleMultiOption = (val) => {
-    const currentSelection = answers[activeQuestion.id] || [];
-    let updatedSelection;
+  const toggleMultiOption = (val: string) => {
+    const currentSelection = (answers[activeQuestion.id] as string[]) || [];
+    let updatedSelection: string[];
     if (currentSelection.includes(val)) {
-      updatedSelection = currentSelection.filter(item => item !== val);
+      updatedSelection = currentSelection.filter((item) => item !== val);
     } else {
       updatedSelection = [...currentSelection, val];
     }
@@ -207,9 +254,10 @@ export default function CofinderOnboarding() {
     setValidationError("");
   };
 
-  const handleTextAreaChange = (e) => {
+  const handleTextAreaChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
-    if (text.length <= activeQuestion.maxLength) {
+    const maxLength = activeQuestion.maxLength ?? Infinity;
+    if (text.length <= maxLength) {
       setAnswers(prev => ({ ...prev, [activeQuestion.id]: text }));
       setValidationError("");
     }
@@ -230,19 +278,19 @@ export default function CofinderOnboarding() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden selection:bg-zinc-900 selection:text-white">
-      
+
       {/* Background Ambient Glows (Very subtle warm & soft neutral lights) */}
       <div className="absolute top-0 -left-4 w-[500px] h-[500px] bg-zinc-200/50 rounded-full filter blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-4 w-[500px] h-[500px] bg-zinc-100/60 rounded-full filter blur-[120px] pointer-events-none" />
 
       {/* Main Container: Elegant soft borders and deep premium charcoal shadow */}
       <div className="grid h-[90vh] min-h-[750px] w-full max-w-7xl overflow-hidden rounded-[24px] border border-zinc-200/80 bg-white lg:grid-cols-12 shadow-[0_32px_100px_-20px_rgba(0,0,0,0.06)] relative z-10">
-        
+
         {/* LEFT COLUMN (Brand & Teaser) - 5 Cols wide */}
         <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-16 relative overflow-hidden border-r border-zinc-100 bg-[#fbfbfb]">
           {/* Subtle grid pattern background in light gray */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40" />
-          
+
           <div className="relative z-10">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-zinc-900 animate-pulse" />
@@ -269,7 +317,7 @@ export default function CofinderOnboarding() {
               </svg>
               <span className="font-medium">Active Matchmaking Network</span>
             </div>
-            
+
             <h2 className="text-5xl font-light tracking-tight text-zinc-900 leading-[1.15]">
               Find your <br />
               <span className="font-serif italic text-zinc-600 font-normal">perfect</span> <br />
@@ -284,7 +332,7 @@ export default function CofinderOnboarding() {
 
         {/* RIGHT COLUMN (The Dynamic Slide Interface) - 7 Cols wide */}
         <div className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-12 lg:p-16 bg-white overflow-y-auto hide-scrollbar">
-          
+
           {/* Top Progress Tracker */}
           <div className="w-full">
             {/* Mobile View Header Title */}
@@ -308,7 +356,7 @@ export default function CofinderOnboarding() {
                   <span className="text-zinc-700 font-semibold">{Math.round(progressPercent)}%</span>
                 </div>
                 <div className="h-1 w-full bg-zinc-100 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-zinc-900 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${progressPercent}%` }}
                   />
@@ -396,7 +444,7 @@ export default function CofinderOnboarding() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
                     </svg>
                   </button>
-                  
+
                   <button
                     onClick={handleRestart}
                     className="w-full h-12 flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 transition-all duration-200 active:scale-[0.98] text-sm"
@@ -431,19 +479,19 @@ export default function CofinderOnboarding() {
 
                 {/* Render corresponding input field component */}
                 <div className="space-y-4">
-                  
+
                   {/* CASE 1: Single Choice Card Grid */}
                   {activeQuestion.type === "choice_single" && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {activeQuestion.options.map((opt) => {
+                      {(activeQuestion.options ?? []).map((opt) => {
                         const isSelected = answers[activeQuestion.id] === opt.value;
                         return (
                           <div
                             key={opt.value}
                             onClick={() => selectSingleOption(opt.value)}
                             className={`p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between h-32 ${
-                              isSelected 
-                                ? "border-zinc-900 bg-zinc-50/50 text-zinc-900 shadow-sm" 
+                              isSelected
+                                ? "border-zinc-900 bg-zinc-50/50 text-zinc-900 shadow-sm"
                                 : "border-zinc-150 hover:border-zinc-300 hover:bg-zinc-50/20 text-zinc-700 bg-white"
                             }`}
                           >
@@ -466,15 +514,15 @@ export default function CofinderOnboarding() {
                   {/* CASE 2: Single Choice Detailed List Layout */}
                   {activeQuestion.type === "choice_single_list" && (
                     <div className="space-y-3">
-                      {activeQuestion.options.map((opt) => {
+                      {(activeQuestion.options ?? []).map((opt) => {
                         const isSelected = answers[activeQuestion.id] === opt.value;
                         return (
                           <div
                             key={opt.value}
                             onClick={() => selectSingleOption(opt.value)}
                             className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer flex items-center justify-between ${
-                              isSelected 
-                                ? "border-zinc-900 bg-zinc-50/30 text-zinc-900" 
+                              isSelected
+                                ? "border-zinc-900 bg-zinc-50/30 text-zinc-900"
                                 : "border-zinc-150 hover:border-zinc-300 hover:bg-zinc-50/10 text-zinc-700 bg-white"
                             }`}
                           >
@@ -497,7 +545,7 @@ export default function CofinderOnboarding() {
                       <div className="relative">
                         <textarea
                           rows={4}
-                          value={answers[activeQuestion.id] || ""}
+                          value={(answers[activeQuestion.id] as string) || ""}
                           onChange={handleTextAreaChange}
                           placeholder={activeQuestion.placeholder}
                           className="w-full p-4 rounded-xl border border-zinc-200 bg-zinc-50/50 text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:border-zinc-900 focus:bg-white transition-all duration-200 resize-none leading-relaxed"
@@ -506,7 +554,7 @@ export default function CofinderOnboarding() {
                       <div className="flex items-center justify-between text-xs text-zinc-400 px-1">
                         <span>Min limit details recommended</span>
                         <span className="font-mono">
-                          {(answers[activeQuestion.id] || "").length} / {activeQuestion.maxLength}
+                          {((answers[activeQuestion.id] as string) || "").length} / {activeQuestion.maxLength}
                         </span>
                       </div>
                     </div>
@@ -515,15 +563,15 @@ export default function CofinderOnboarding() {
                   {/* CASE 4: Compact Horizontal/Vertical Select Chips */}
                   {activeQuestion.type === "chips" && (
                     <div className="grid grid-cols-2 gap-3">
-                      {activeQuestion.options.map((opt) => {
+                      {(activeQuestion.options ?? []).map((opt) => {
                         const isSelected = answers[activeQuestion.id] === opt.value;
                         return (
                           <div
                             key={opt.value}
                             onClick={() => selectSingleOption(opt.value)}
                             className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 text-center ${
-                              isSelected 
-                                ? "border-zinc-900 bg-zinc-900 text-white shadow-sm" 
+                              isSelected
+                                ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
                                 : "border-zinc-150 hover:border-zinc-300 text-zinc-700 hover:text-zinc-900 bg-white"
                             }`}
                           >
@@ -540,15 +588,15 @@ export default function CofinderOnboarding() {
                   {/* CASE 5: Multi Selection Checkbox Card Layout */}
                   {activeQuestion.type === "checkbox_multi" && (
                     <div className="space-y-3">
-                      {activeQuestion.options.map((opt) => {
-                        const isSelected = (answers[activeQuestion.id] || []).includes(opt.value);
+                      {(activeQuestion.options ?? []).map((opt) => {
+                        const isSelected = ((answers[activeQuestion.id] as string[]) || []).includes(opt.value);
                         return (
                           <div
                             key={opt.value}
                             onClick={() => toggleMultiOption(opt.value)}
                             className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer flex items-center justify-between ${
-                              isSelected 
-                                ? "border-zinc-900 bg-zinc-50/30 text-zinc-900" 
+                              isSelected
+                                ? "border-zinc-900 bg-zinc-50/30 text-zinc-900"
                                 : "border-zinc-150 hover:border-zinc-300 hover:bg-zinc-50/10 text-zinc-700 bg-white"
                             }`}
                           >
@@ -586,7 +634,7 @@ export default function CofinderOnboarding() {
                   Back
                 </button>
               )}
-              
+
               <button
                 type="button"
                 onClick={handleNext}

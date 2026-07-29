@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Mail, Lock, User, MapPin, Calendar, Users, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -44,23 +44,30 @@ export default function PremiumRegister() {
     console.log("Registering user with data:", formData);
   };
 
-  // Framer Motion Animation Variants for slide effect
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 50 : -50,
-      opacity: 0
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] }
+
+
+const slideVariants: Variants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 50 : -50,
+    opacity: 0,
+  }),
+
+  center: {
+    x: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.4,
     },
-    exit: (direction: number) => ({
-      x: direction < 0 ? 50 : -50,
-      opacity: 0,
-      transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
-    })
-  };
+  },
+
+  exit: (direction: number) => ({
+    x: direction < 0 ? 50 : -50,
+    opacity: 0,
+    transition: {
+      duration: 0.3,
+    },
+  }),
+};
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden selection:bg-zinc-900 selection:text-white">
