@@ -12,6 +12,10 @@ import Button from "@/app/components/ui/Button";
 import SocialButton from "@/app/components/ui/SocialButton";
 import { useRouter } from "next/navigation";
 
+import { login } from "@/app/services/auth.service";
+import ResponseModal from "../components/ResponseModal";
+import { useState } from "react";
+
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -20,7 +24,55 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const appRouter = useRouter()
+  const [popup, setPopup] = useState({
+    open: false,
+    type: "loading",
+    title: "",
+    message: "",
+  });
+
+  const onSubmit = async (data: LoginForm) => {
+    setPopup({
+      open: true,
+      type: "loading",
+      title: "Logging in",
+      message: "Please wait while we log in your profile...",
+    });
+
+    try {
+      const res = await login(data);
+      if (res.success) {
+        localStorage.setItem("token", res.data.token);
+
+        setPopup({
+          open: true,
+          type: "success",
+          title: "Login Succesfull !!",
+          message: "Your account has been logged in successfully.",
+        });
+
+        setTimeout(() => {
+          appRouter.push("/dashboard");
+        }, 2000);
+      } else {
+        setPopup({
+          open: true,
+          type: "error",
+          title: "Login Failed",
+          message: res.message || "Something went wrong.",
+        });
+      }
+    } catch (error: any) {
+      setPopup({
+        open: true,
+        type: "error",
+        title: "Login Failed",
+        message: error?.response?.data?.message || "Something went wrong.",
+      });
+    }
+  };
+
+  const appRouter = useRouter();
   const {
     register,
     handleSubmit,
@@ -29,14 +81,6 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginForm) => {
-    console.log(data);
-
-    // TODO:
-    // const res = await login(data);
-    // router.push("/dashboard");
-  };
-
   return (
     // <div className="min-h-screen bg-[#09090b] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden selection:bg-zinc-800 selection:text-white">
     //   {/* Background Ambient Glows */}
@@ -44,12 +88,12 @@ export default function LoginPage() {
     //   <div className="absolute bottom-0 right-4 w-96 h-96 bg-zinc-700 rounded-full filter blur-[120px] opacity-15 pointer-events-none" />
 
     //   <div className="grid h-[90vh] min-h-[750px] w-full max-w-7xl overflow-hidden rounded-[24px] border border-zinc-800/80 bg-zinc-950/40 backdrop-blur-md lg:grid-cols-12 shadow-[0_32px_100px_-20px_rgba(0,0,0,0.8)] relative z-10">
-        
+
     //     {/* LEFT COLUMN (Brand & Teaser) - 5 Cols wide */}
     //     <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-16 relative overflow-hidden border-r border-zinc-900/80">
     //       {/* Subtle grid pattern background */}
     //       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f23_1px,transparent_1px),linear-gradient(to_bottom,#1f1f23_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30" />
-          
+
     //       <div className="relative z-10">
     //         <div className="flex items-center gap-2">
     //           <span className="h-2 w-2 rounded-full bg-white animate-ping" />
@@ -74,7 +118,7 @@ export default function LoginPage() {
     //           <Sparkles size={12} className="text-zinc-400" />
     //           <span>Now live globally</span>
     //         </div>
-            
+
     //         <h2 className="text-5xl font-light tracking-tight text-white leading-[1.15]">
     //           Find your <br />
     //           <span className="font-serif italic text-zinc-300">perfect</span> <br />
@@ -229,18 +273,18 @@ export default function LoginPage() {
 
       {/* Main Container: Shifted from absolute black to elegant soft zinc-200 and deep charcoal shadow */}
       <div className="grid h-[90vh] min-h-[750px] w-full max-w-7xl overflow-hidden rounded-[24px] border border-zinc-200/80 bg-white lg:grid-cols-12 shadow-[0_32px_100px_-20px_rgba(0,0,0,0.06)] relative z-10">
-        
         {/* LEFT COLUMN (Brand & Teaser) - 5 Cols wide */}
         <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-16 relative overflow-hidden border-r border-zinc-100 bg-[#fbfbfb]">
           {/* Subtle grid pattern background in light gray */}
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40" />
-          
+
           <div className="relative z-10">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-zinc-900 animate-pulse" />
               <h1
-              onClick={()=>appRouter.push('/')}
-              className="text-2xl font-semibold tracking-tight cursor-pointer text-zinc-900 font-sans">
+                onClick={() => appRouter.push("/")}
+                className="text-2xl font-semibold tracking-tight cursor-pointer text-zinc-900 font-sans"
+              >
                 Cofinder
               </h1>
             </div>
@@ -261,15 +305,19 @@ export default function LoginPage() {
               <Sparkles size={12} className="text-zinc-500" />
               <span className="font-medium">Now live globally</span>
             </div>
-            
+
             <h2 className="text-5xl font-light tracking-tight text-zinc-900 leading-[1.15]">
               Find your <br />
-              <span className="font-serif italic text-zinc-600">perfect</span> <br />
+              <span className="font-serif italic text-zinc-600">
+                perfect
+              </span>{" "}
+              <br />
               co-founder.
             </h2>
 
             <p className="mt-6 text-zinc-500 text-base leading-relaxed max-w-sm">
-              Meet ambitious entrepreneurs, developers, designers, and investors ready to scale.
+              Meet ambitious entrepreneurs, developers, designers, and investors
+              ready to scale.
             </p>
           </div>
         </div>
@@ -279,7 +327,7 @@ export default function LoginPage() {
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="w-full max-w-[420px]"
           >
             {/* Logo for mobile view */}
@@ -302,7 +350,9 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
               {/* Premium style light Inputs */}
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-500">Email Address</label>
+                <label className="text-xs font-semibold text-zinc-500">
+                  Email Address
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400">
                     <Mail size={16} />
@@ -315,13 +365,17 @@ export default function LoginPage() {
                   />
                 </div>
                 {errors.email?.message && (
-                  <p className="text-xs text-red-500 mt-1">{errors.email?.message}</p>
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.email?.message}
+                  </p>
                 )}
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-zinc-500">Password</label>
+                  <label className="text-xs font-semibold text-zinc-500">
+                    Password
+                  </label>
                   <Link
                     href="/forgot-password"
                     className="text-xs text-zinc-500 hover:text-zinc-900 transition-colors"
@@ -341,12 +395,13 @@ export default function LoginPage() {
                   />
                 </div>
                 {errors.password?.message && (
-                  <p className="text-xs text-red-500 mt-1">{errors.password?.message}</p>
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.password?.message}
+                  </p>
                 )}
               </div>
 
               <button
-              onClick={()=>appRouter.push('/home')}
                 type="submit"
                 disabled={isSubmitting}
                 className="relative group w-full h-12 mt-2 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white font-medium text-sm hover:bg-black transition-all duration-200 active:scale-[0.98] shadow-sm"
@@ -356,7 +411,10 @@ export default function LoginPage() {
                 ) : (
                   <>
                     <span>Sign in to Dashboard</span>
-                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight
+                      size={16}
+                      className="group-hover:translate-x-1 transition-transform"
+                    />
                   </>
                 )}
               </button>
@@ -406,8 +464,19 @@ export default function LoginPage() {
             </p>
           </motion.div>
         </div>
-
       </div>
+      <ResponseModal
+        open={popup.open}
+        type={popup.type as any}
+        title={popup.title}
+        message={popup.message}
+        onClose={() =>
+          setPopup((p) => ({
+            ...p,
+            open: false,
+          }))
+        }
+      />
     </div>
   );
 }

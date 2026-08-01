@@ -1,31 +1,52 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { Mail, Lock, User, MapPin, Calendar, Users, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import React, { useState } from "react";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
+import {
+  Mail,
+  Lock,
+  User,
+  MapPin,
+  Calendar,
+  Users,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { register } from "@/app/services/auth.service";
+import { z } from "zod";
+import ResponseModal from "../components/ResponseModal";
 
 export default function PremiumRegister() {
-
   const appRouter = useRouter();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    username: '',
-    displayName: '',
-    location: '',
-    age: '',
-    gender: ''
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    username: "",
+    displayName: "",
+    location: "",
+    age: "",
+    gender: "",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const [popup, setPopup] = useState({
+    open: false,
+    type: "loading",
+    title: "",
+    message: "",
+  });
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const nextStep = (e: React.FormEvent) => {
@@ -38,36 +59,81 @@ export default function PremiumRegister() {
     setStep(1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Final registration API call goes here
-    console.log("Registering user with data:", formData);
+
+    setPopup({
+      open: true,
+      type: "loading",
+      title: "Creating Account",
+      message: "Please wait while we create your profile...",
+    });
+
+    try {
+      const payload = {
+        ...formData,
+        name: `${formData.firstName} ${formData.lastName}`,
+      };
+
+      const res = await register(payload);
+
+      if (res.success) {
+        localStorage.setItem("token", res.data.token);
+
+        setPopup({
+          open: true,
+          type: "success",
+          title: "Welcome to Cofinder",
+          message: "Your account has been created successfully.",
+        });
+
+        setTimeout(() => {
+          appRouter.push("/onboarding");
+        }, 2000);
+      } else {
+        setPopup({
+          open: true,
+          type: "error",
+          title: "Registration Failed",
+          message: res.message || "Something went wrong.",
+        });
+      }
+    } catch (err: any) {
+      setPopup({
+        open: true,
+        type: "error",
+        title: "Registration Failed",
+        message:
+          err?.response?.data?.message ||
+          err?.message ||
+          "Something went wrong.",
+      });
+    }
   };
 
+  const slideVariants: Variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 50 : -50,
+      opacity: 0,
+    }),
 
-
-const slideVariants: Variants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 50 : -50,
-    opacity: 0,
-  }),
-
-  center: {
-    x: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.4,
+    center: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.4,
+      },
     },
-  },
 
-  exit: (direction: number) => ({
-    x: direction < 0 ? 50 : -50,
-    opacity: 0,
-    transition: {
-      duration: 0.3,
-    },
-  }),
-};
+    exit: (direction: number) => ({
+      x: direction < 0 ? 50 : -50,
+      opacity: 0,
+      transition: {
+        duration: 0.3,
+      },
+    }),
+  };
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden selection:bg-zinc-900 selection:text-white">
@@ -77,11 +143,10 @@ const slideVariants: Variants = {
 
       {/* Main Grid Wrapper */}
       <div className="grid h-[90vh] min-h-[750px] w-full max-w-7xl overflow-hidden rounded-[24px] border border-zinc-200/80 bg-white lg:grid-cols-12 shadow-[0_32px_100px_-20px_rgba(0,0,0,0.06)] relative z-10">
-        
         {/* LEFT COLUMN (The Brand Side) */}
         <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-16 relative overflow-hidden border-r border-zinc-100 bg-[#fbfbfb]">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40" />
-          
+
           <div className="relative z-10">
             <Link href="/" className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-zinc-900 animate-pulse" />
@@ -94,10 +159,13 @@ const slideVariants: Variants = {
               <p className="text-xs font-bold tracking-[0.25em] text-zinc-400 uppercase">
                 Step {step} of 2
               </p>
-              <div className="h-[2px] w-12 bg-zinc-800 transition-all duration-300" style={{ width: step === 1 ? '50%' : '100%' }} />
+              <div
+                className="h-[2px] w-12 bg-zinc-800 transition-all duration-300"
+                style={{ width: step === 1 ? "50%" : "100%" }}
+              />
               <p className="text-zinc-500 text-sm leading-relaxed max-w-[240px] pt-2">
-                {step === 1 
-                  ? "Let's start with your basic details to set up your profile." 
+                {step === 1
+                  ? "Let's start with your basic details to set up your profile."
                   : "Now, customize your founder persona so others can find you easily."}
               </p>
             </div>
@@ -106,7 +174,10 @@ const slideVariants: Variants = {
           <div className="relative z-10">
             <h2 className="text-4xl font-light tracking-tight text-zinc-900 leading-[1.2]">
               Join the elite circle of <br />
-              <span className="font-serif italic text-zinc-600">builders</span> & <br />
+              <span className="font-serif italic text-zinc-600">
+                builders
+              </span>{" "}
+              & <br />
               founders.
             </h2>
           </div>
@@ -115,14 +186,15 @@ const slideVariants: Variants = {
         {/* RIGHT COLUMN (The Registration Form) */}
         <div className="lg:col-span-7 flex items-center justify-center p-6 sm:p-12 lg:p-20 bg-white overflow-y-auto">
           <div className="w-full max-w-[460px]">
-            
             {/* Header info */}
             <div className="space-y-2 mb-8">
               <h2 className="text-3xl font-normal tracking-tight text-zinc-900">
                 Create your account
               </h2>
               <p className="text-sm text-zinc-400">
-                {step === 1 ? "Step 1: Credentials & Identity" : "Step 2: Profile Persona Details"}
+                {step === 1
+                  ? "Step 1: Credentials & Identity"
+                  : "Step 2: Profile Persona Details"}
               </p>
             </div>
 
@@ -140,7 +212,9 @@ const slideVariants: Variants = {
                   <form onSubmit={nextStep} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-500">First Name</label>
+                        <label className="text-xs font-semibold text-zinc-500">
+                          First Name
+                        </label>
                         <input
                           type="text"
                           name="firstName"
@@ -152,7 +226,9 @@ const slideVariants: Variants = {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-500">Last Name</label>
+                        <label className="text-xs font-semibold text-zinc-500">
+                          Last Name
+                        </label>
                         <input
                           type="text"
                           name="lastName"
@@ -166,7 +242,9 @@ const slideVariants: Variants = {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-zinc-500">Email Address</label>
+                      <label className="text-xs font-semibold text-zinc-500">
+                        Email Address
+                      </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400">
                           <Mail size={16} />
@@ -184,7 +262,9 @@ const slideVariants: Variants = {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-zinc-500">Password</label>
+                      <label className="text-xs font-semibold text-zinc-500">
+                        Password
+                      </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400">
                           <Lock size={16} />
@@ -202,7 +282,9 @@ const slideVariants: Variants = {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-zinc-500">Confirm Password</label>
+                      <label className="text-xs font-semibold text-zinc-500">
+                        Confirm Password
+                      </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400">
                           <Lock size={16} />
@@ -224,7 +306,10 @@ const slideVariants: Variants = {
                       className="group w-full h-11 mt-4 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white font-medium text-sm hover:bg-black transition-all duration-200 active:scale-[0.98] shadow-sm"
                     >
                       <span>Continue to Profile Details</span>
-                      <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight
+                        size={16}
+                        className="group-hover:translate-x-1 transition-transform"
+                      />
                     </button>
                   </form>
                 ) : (
@@ -232,7 +317,9 @@ const slideVariants: Variants = {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-500">Username</label>
+                        <label className="text-xs font-semibold text-zinc-500">
+                          Username
+                        </label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-zinc-400 text-xs font-medium">
                             @
@@ -249,7 +336,9 @@ const slideVariants: Variants = {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-500">Display Name</label>
+                        <label className="text-xs font-semibold text-zinc-500">
+                          Display Name
+                        </label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400">
                             <User size={15} />
@@ -268,7 +357,9 @@ const slideVariants: Variants = {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-zinc-500">Location / City</label>
+                      <label className="text-xs font-semibold text-zinc-500">
+                        Location / City
+                      </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400">
                           <MapPin size={16} />
@@ -287,7 +378,9 @@ const slideVariants: Variants = {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-500">Age</label>
+                        <label className="text-xs font-semibold text-zinc-500">
+                          Age
+                        </label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400">
                             <Calendar size={16} />
@@ -307,7 +400,9 @@ const slideVariants: Variants = {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-500">Gender</label>
+                        <label className="text-xs font-semibold text-zinc-500">
+                          Gender
+                        </label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-zinc-400">
                             <Users size={16} />
@@ -319,11 +414,15 @@ const slideVariants: Variants = {
                             onChange={handleInputChange}
                             className="w-full h-11 pl-11 pr-4 rounded-xl border border-zinc-200 bg-zinc-50/50 text-zinc-900 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:border-zinc-900 focus:bg-white transition-all duration-200 appearance-none"
                           >
-                            <option value="" disabled className="text-zinc-400">Select</option>
+                            <option value="" disabled className="text-zinc-400">
+                              Select
+                            </option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
                             <option value="other">Non-binary</option>
-                            <option value="prefer-not">Prefer not to say</option>
+                            <option value="prefer-not">
+                              Prefer not to say
+                            </option>
                           </select>
                         </div>
                       </div>
@@ -341,14 +440,12 @@ const slideVariants: Variants = {
                       </button>
 
                       <button
-                      onClick={()=>{appRouter.push('/onboarding')}}
                         type="submit"
                         className="flex-1 h-11 flex items-center justify-center gap-2 rounded-xl bg-zinc-900 text-white font-medium text-sm hover:bg-black transition-all duration-200 active:scale-[0.98] shadow-sm"
                       >
                         <CheckCircle2 size={16} />
-                       
-                          <span>Register & Create Profile</span>
-                        
+
+                        <span>Register & Create Profile</span>
                       </button>
                     </div>
                   </form>
@@ -367,8 +464,20 @@ const slideVariants: Variants = {
             </p>
           </div>
         </div>
-
       </div>
+
+      <ResponseModal
+        open={popup.open}
+        type={popup.type as any}
+        title={popup.title}
+        message={popup.message}
+        onClose={() =>
+          setPopup((p) => ({
+            ...p,
+            open: false,
+          }))
+        }
+      />
     </div>
   );
 }
