@@ -22,19 +22,19 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-          <a href="#founders" className="hover:text-indigo-600 transition-colors">
+          <a href="#founders" className="hover:text-gray-700 duration-200 transition-colors">
             For Founders
           </a>
-          <a href="#builders" className="hover:text-indigo-600 transition-colors">
+          <a href="#builders" className="hover:text-gray-700 duration-200 transition-colors">
             For Builders
           </a>
-          <a href="#how-it-works" className="hover:text-indigo-600 transition-colors">
+          <a href="#how-it-works" className="hover:text-gray-700 duration-200 transition-colors">
             How It Works
           </a>
-          <a href="#stories" className="hover:text-indigo-600 transition-colors">
+          <a href="#stories" className="hover:text-gray-700 duration-200 transition-colors">
             Success Stories
           </a>
-          <a href="#pricing" className="hover:text-indigo-600 transition-colors">
+          <a href="#pricing" className="hover:text-gray-700 duration-200 transition-colors">
             Pricing
           </a>
         </div>
@@ -45,7 +45,7 @@ const Navbar = () => {
           </button> */}
           <button
           onClick={()=>appRouter.push('/login')}
-          className="bg-slate-900 hover:bg-indigo-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-all duration-300 shadow-md hover:shadow-indigo-500/25 flex items-center gap-2 group">
+          className="bg-slate-900 hover:scale-105 duration-300 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-all active:scale-95 cursor-pointer shadow-md hover:shadow-indigo-500/25 flex items-center gap-2 group">
             Get Started
             {/* <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /> */}
           </button>

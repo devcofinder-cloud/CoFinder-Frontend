@@ -4,9 +4,8 @@ import SplashScreen from "./components/SplashScreen/SplashScreen";
 
 export default function Home() {
   return (
-   <div>
-    {/* <LoginPage/> */}
-    <SplashScreen/>
-   </div>
+    <div>
+      <SplashScreen />
+    </div>
   );
 }

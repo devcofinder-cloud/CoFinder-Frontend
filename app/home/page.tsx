@@ -1,7 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, type Variants } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import {
+  animate,
+  useMotionValue,
+  useTransform,
+  motion,
+  type Variants,
+} from "framer-motion";
 import {
   Sparkles,
   ArrowRight,
@@ -19,9 +25,10 @@ import {
   Rocket,
   Check,
 } from "lucide-react";
-import Navbar from "../components/Layout/Navbar";
 import HowItWorks from "../components/Home-Components/HowItWorks";
-import Footer from "../components/Layout/Footer";
+import BuiltFor from "../components/Home-Components/BuiltFor";
+import BuiltBy from "../components/Home-Components/BuiltBy";
+import PricePlan from "../components/Home-Components/PricePlans";
 
 // Animation Variants
 const fadeInUp: Variants = {
@@ -47,6 +54,74 @@ const staggerContainer = {
     },
   },
 };
+
+function ProgressCircle() {
+  const progress = 80;
+
+  const circumference = 2 * Math.PI * 38;
+  const motionValue = useMotionValue(0);
+
+  const dashOffset = useTransform(
+    motionValue,
+    (value) => circumference - (value / 100) * circumference,
+  );
+
+  const percentage = useTransform(motionValue, (value) => Math.round(value));
+
+  useEffect(() => {
+    const controls = animate(motionValue, progress, {
+      duration: 2,
+      delay:1,
+      ease: "easeOut",
+    });
+
+    return () => controls.stop();
+  }, [motionValue]);
+
+  return (
+    <div className="relative flex h-24 w-24 items-center justify-center">
+      <svg className="h-full w-full -rotate-90">
+        {/* Background */}
+        <circle
+          cx="48"
+          cy="48"
+          r="38"
+          stroke="currentColor"
+          strokeWidth="8"
+          className="text-slate-200"
+          fill="transparent"
+        />
+
+        {/* Animated Progress */}
+        <motion.circle
+          cx="48"
+          cy="48"
+          r="38"
+          stroke="currentColor"
+          strokeWidth="8"
+          className="text-black"
+          strokeLinecap="round"
+          fill="transparent"
+          strokeDasharray={circumference}
+          style={{
+            strokeDashoffset: dashOffset,
+          }}
+        />
+      </svg>
+
+      {/* Animated Number */}
+     <div className="absolute flex items-end">
+  <motion.span className="text-xl font-bold text-black">
+    {percentage}
+  </motion.span>
+
+  <span className="mb-1 text-xs font-semibold">%</span>
+</div>
+
+      
+    </div>
+  );
+}
 
 export default function CofinderLanding() {
   const [activeTab, setActiveTab] = useState<"founder" | "builder">("founder");
@@ -335,34 +410,7 @@ export default function CofinderLanding() {
                 </span>
 
                 {/* Radial Gauge Visual */}
-                <div className="relative w-24 h-24 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90">
-                    <circle
-                      cx="48"
-                      cy="48"
-                      r="38"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      className="text-slate-100"
-                      fill="transparent"
-                    />
-                    <circle
-                      cx="48"
-                      cy="48"
-                      r="38"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      className="text-black"
-                      strokeDasharray="238"
-                      strokeDashoffset="24"
-                      strokeLinecap="round"
-                      fill="transparent"
-                    />
-                  </svg>
-                  <span className="absolute text-xl font-bold text-slate-900">
-                    96%
-                  </span>
-                </div>
+                <ProgressCircle />
 
                 <div>
                   <p className="text-xs font-bold text-slate-800">
@@ -485,6 +533,9 @@ export default function CofinderLanding() {
       </section>
 
       <HowItWorks />
+      <BuiltFor />
+      <BuiltBy />
+      <PricePlan />
     </div>
   );
 }
