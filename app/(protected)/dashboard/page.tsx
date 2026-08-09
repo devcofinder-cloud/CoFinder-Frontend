@@ -233,7 +233,7 @@ export default function DashboardPage() {
           {/* Sidebar Column */}
           <div className="space-y-8">
             {/* Profile Card */}
-            <section className="rounded-3xl border border-zinc-200/80 bg-white p-6 sm:p-8 text-center shadow-sm">
+            {/* <section className="rounded-3xl border border-zinc-200/80 bg-white p-6 sm:p-8 text-center shadow-sm">
               <div className="relative mx-auto h-24 w-24">
                 <div className="flex h-full w-full items-center justify-center rounded-full bg-zinc-900 text-2xl font-bold text-white shadow-md">
                   AS
@@ -252,23 +252,71 @@ export default function DashboardPage() {
               >
                 Edit Profile
               </button>
-            </section>
+            </section> */}
 
             {/* Profile Progress */}
-            <section className="rounded-3xl border border-zinc-200/80 bg-white p-6 shadow-sm">
+            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
+              {/* Status */}
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold">Profile Completion</h2>
-                <span className="text-xs font-extrabold text-zinc-900">72%</span>
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zinc-400 opacity-40" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-zinc-900" />
+                  </span>
+
+                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                    Profile Incomplete
+                  </span>
+                </div>
+
+                <span className="text-sm font-bold tracking-tight text-zinc-900">
+                  72%
+                </span>
               </div>
 
-              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-zinc-100">
-                <div className="h-full w-[72%] rounded-full bg-zinc-900 transition-all duration-500" />
+              {/* Progress */}
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
+                <div
+                  className="h-full rounded-full bg-zinc-900 transition-all duration-700 ease-out"
+                  style={{ width: "72%" }}
+                />
               </div>
 
-              <p className="mt-3 text-xs text-zinc-500">
-                Add a pitch deck to reach 100% completion.
-              </p>
-            </section>
+              {/* Bottom */}
+              <div className="mt-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs leading-relaxed text-zinc-500">
+                    Complete your profile to unlock{" "}
+                    <span className="font-medium text-zinc-800">
+                      better matches.
+                    </span>
+                  </p>
+
+                  <p className="mt-1 text-[11px] font-medium text-zinc-400">
+                    28% remaining
+                  </p>
+                </div>
+
+                <button
+
+                onClick={()=>appRouter.push('/questionnair')}
+                  className="
+        shrink-0 rounded-xl
+        border border-zinc-900
+        bg-zinc-900
+        px-4 py-2.5
+        text-xs font-semibold text-white
+        transition-all duration-200
+        hover:-translate-y-0.5
+        hover:bg-zinc-800
+        hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]
+        active:translate-y-0 cursor-pointer hover:scale-105 
+      "
+                >
+                  Complete Profile 
+                </button>
+              </div>
+            </div>
 
             {/* AI Suggestion Card */}
             <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 p-6 text-white shadow-xl shadow-zinc-900/10">
@@ -285,8 +333,8 @@ export default function DashboardPage() {
 
               <p className="mt-2 text-xs leading-relaxed text-zinc-300">
                 Profiles with a detailed bio receive{" "}
-                <span className="font-semibold text-white">2.4x more</span> founder
-                matches.
+                <span className="font-semibold text-white">2.4x more</span>{" "}
+                founder matches.
               </p>
 
               <button className="mt-5 w-full rounded-xl bg-white py-2.5 text-xs font-bold text-zinc-900 transition hover:bg-zinc-100 active:scale-98">

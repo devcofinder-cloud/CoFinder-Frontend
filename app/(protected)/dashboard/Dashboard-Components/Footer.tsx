@@ -8,6 +8,7 @@ import {
   MessageCircle,
   User,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const tabs = [
   { id: "home", icon: Grid2X2 },
@@ -19,6 +20,7 @@ const tabs = [
 
 export default function Footer() {
   const [active, setActive] = useState("home");
+  const appRouter = useRouter()
 
   return (
     <footer className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
@@ -43,7 +45,7 @@ export default function Footer() {
           return (
             <button
               key={tab.id}
-              onClick={() => setActive(tab.id)}
+              onClick={() =>{ setActive(tab.id); appRouter.push(tab.id)}}
               className={`
                 flex h-[48px] w-[48px]
                 items-center justify-center

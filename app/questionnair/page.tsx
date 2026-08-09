@@ -7,6 +7,7 @@ import {
   getProfileQuestions,
   submitProfileAnswer,
 } from "../services/profile_questions.service";
+import PremiumLoader from "../(protected)/dashboard/Dashboard-Components/PremiumLoader";
 
 const setInfo = [
   {
@@ -210,6 +211,13 @@ export default function QuestionnairePage() {
       opacity: 0,
     }),
   };
+
+
+  if(loading){
+    return (
+      <PremiumLoader/>
+    )
+  }
 
   return (
     <div className="relative min-h-screen bg-white text-zinc-900 flex flex-col justify-between p-6 md:p-12 overflow-hidden antialiased font-sans">
