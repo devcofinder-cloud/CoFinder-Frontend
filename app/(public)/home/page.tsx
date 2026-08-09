@@ -25,10 +25,10 @@ import {
   Rocket,
   Check,
 } from "lucide-react";
-import HowItWorks from "../components/Home-Components/HowItWorks";
-import BuiltFor from "../components/Home-Components/BuiltFor";
-import BuiltBy from "../components/Home-Components/BuiltBy";
-import PricePlan from "../components/Home-Components/PricePlans";
+import HowItWorks from "./Home-Components/HowItWorks";
+import BuiltFor from "./Home-Components/BuiltFor";
+import BuiltBy from "./Home-Components/BuiltBy";
+import PricePlan from "./Home-Components/PricePlans";
 
 // Animation Variants
 const fadeInUp: Variants = {

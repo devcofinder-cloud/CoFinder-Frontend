@@ -43,6 +43,7 @@ export default function LoginPage() {
       const res = await login(data);
       if (res.success) {
         localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user",res.data.user)
 
         setPopup({
           open: true,
@@ -266,7 +267,7 @@ export default function LoginPage() {
 
     //   </div>
     // </div>
-    <div className="min-h-screen hide-scrollbar bg-[#fafafa] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden selection:bg-zinc-900 selection:text-white">
+    <div className="min-h-screen hide-scrollbar p-5 bg-[#fafafa] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden selection:bg-zinc-900 selection:text-white">
       {/* Background Ambient Glows (Very subtle warm light) */}
       <div className="absolute top-0 -left-4 w-96 h-96 bg-zinc-200/50 rounded-full filter blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-4 w-96 h-96 bg-zinc-100/60 rounded-full filter blur-[120px] pointer-events-none" />
