@@ -21,6 +21,7 @@ import {
   Send,
   CheckCircle2,
   Globe,
+  DoorOpen,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -243,10 +244,22 @@ export default function ProfilePage() {
               )}
             </button>
           </div>
+
+          <div className="w-full mt-5">
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.reload();
+              }}
+              className=" flex items-center justify-center gap-5  cursor-pointer rounded-xl border border-zinc-200 bg-black w-full px-4 py-2.5 text-sm font-semibold text-white transition hover:border-black hover:bg-zinc-50 hover:text-black active:scale-95"
+            >
+              Logout <DoorOpen />
+            </button>
+          </div>
         </motion.aside>
 
         {/* ---------------------------------------------------- */}
-                            
+
         <div className="relative">
           <AnimatePresence mode="wait">
             {activeTab === "Personal" && (
@@ -437,7 +450,10 @@ function TraitList({
     <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
       <div className="divide-y divide-black/10">
         {traits.map(({ icon: Icon, label }, i) => (
-          <div key={i} className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0">
+          <div
+            key={i}
+            className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0"
+          >
             <Icon className="h-5 w-5 shrink-0 text-black" />
             <span className="text-sm font-semibold text-black">{label}</span>
           </div>

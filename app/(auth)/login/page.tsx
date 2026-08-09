@@ -43,7 +43,7 @@ export default function LoginPage() {
       const res = await login(data);
       if (res.success) {
         localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user",res.data.user)
+        localStorage.setItem("user",res.data.data.user)
 
         setPopup({
           open: true,
