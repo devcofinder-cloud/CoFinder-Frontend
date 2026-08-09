@@ -47,7 +47,7 @@ export default function ResponseModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={type !== "loading" ? onClose : undefined}
-            className="fixed inset-0 z-50 bg-white/60 backdrop-blur-xl"
+            className="fixed inset-0 z-50 bg-white/60 backdrop-blur-xl m-5"
           />
 
           {/* Card */}
@@ -72,7 +72,7 @@ export default function ResponseModal({
               stiffness: 250,
               damping: 22,
             }}
-            className="fixed left-1/2 top-1/2 z-50 w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-white border border-zinc-200 shadow-[0_40px_120px_rgba(0,0,0,.15)] p-8"
+            className="fixed left-1/2 top-1/2 z-50 w-[380px] sm:w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-white border border-zinc-200 shadow-[0_40px_120px_rgba(0,0,0,.15)] p-8"
           >
             <div className="flex flex-col items-center text-center">
               <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50">

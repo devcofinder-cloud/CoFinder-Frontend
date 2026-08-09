@@ -7,9 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import Input from "@/app/components/ui/Input";
-import Button from "@/app/components/ui/Button";
-import SocialButton from "@/app/components/ui/SocialButton";
+
 import { useRouter } from "next/navigation";
 
 import { login } from "@/app/services/auth.service";
@@ -43,7 +41,7 @@ export default function LoginPage() {
       const res = await login(data);
       if (res.success) {
         localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user",res.data.data.user)
+       localStorage.setItem("user", JSON.stringify(res.data.user));
 
         setPopup({
           open: true,

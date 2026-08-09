@@ -8,6 +8,8 @@ import {
   submitProfileAnswer,
 } from "../services/profile_questions.service";
 import PremiumLoader from "../(protected)/dashboard/Dashboard-Components/PremiumLoader";
+import FeedbackPopup from "./FeedBackPopup";
+import { useRouter } from "next/navigation";
 
 const setInfo = [
   {
@@ -79,6 +81,8 @@ export default function QuestionnairePage() {
   const isLastSet = currentSet === setInfo.length - 1;
   const isFirstQuestion = currentQuestion === 0;
   const isLastQuestion = currentQuestion === activeSet.questions.length - 1;
+
+  const appRouter = useRouter()
 
   const fetchQuestions = async (setNumber: number) => {
     try {
@@ -156,6 +160,8 @@ export default function QuestionnairePage() {
         return;
       }
 
+      
+
       // All sets completed
       showModal(
         "success",
@@ -163,6 +169,7 @@ export default function QuestionnairePage() {
         `Your profile is now ${response.data.profileCompletion}% complete.`,
         "Done",
       );
+      setTimeout(() => appRouter.push("/dashboard"), 1500);
     } catch (error: any) {
       console.error("Submit error:", error);
 
@@ -212,11 +219,8 @@ export default function QuestionnairePage() {
     }),
   };
 
-
-  if(loading){
-    return (
-      <PremiumLoader/>
-    )
+  if (loading) {
+    return <PremiumLoader />;
   }
 
   return (
@@ -401,6 +405,20 @@ export default function QuestionnairePage() {
       <footer className="w-full max-w-3xl mx-auto text-center text-xs text-zinc-400 font-mono tracking-widest pt-4 border-t border-zinc-200">
         QUESTIONNAIRE PORTAL • LIGHT GRID EDITION
       </footer>
+
+      <FeedbackPopup
+        isOpen={modal.isOpen}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        buttonText={modal.buttonText}
+        onClose={() =>
+          setModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+      />
     </div>
   );
 }
