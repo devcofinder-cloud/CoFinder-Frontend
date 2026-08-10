@@ -260,7 +260,7 @@ export default function ProfilePage() {
 
         {/* ---------------------------------------------------- */}
 
-        <div className="relative">
+        <div className="relative mb-10 sm:m-0">
           <AnimatePresence mode="wait">
             {activeTab === "Personal" && (
               <TabPanel key="personal">

@@ -10,6 +10,7 @@ import {
 import PremiumLoader from "../(protected)/dashboard/Dashboard-Components/PremiumLoader";
 import FeedbackPopup from "./FeedBackPopup";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, ChevronLeft } from "lucide-react";
 
 const setInfo = [
   {
@@ -224,7 +225,7 @@ export default function QuestionnairePage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-white text-zinc-900 flex flex-col justify-between p-6 md:p-12 overflow-hidden antialiased font-sans">
+    <div className="relative min-h-screen bg-white text-zinc-900 flex flex-col justify-between p-2 md:p-12 overflow-hidden antialiased font-sans">
       {/* Structural Grid Background Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_50%,#000_60%,transparent_100%)] -z-10 pointer-events-none" />
 
@@ -293,7 +294,7 @@ export default function QuestionnairePage() {
               animate="center"
               exit="exit"
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="bg-white border-2 border-black rounded-3xl p-8 md:p-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative"
+              className="bg-white border-2 border-black rounded-3xl px-2 py-4 md:p-12  relative"
             >
               {/* Progress Bar */}
               <div className="mb-8">
@@ -341,7 +342,7 @@ export default function QuestionnairePage() {
                             }));
                           }}
                           className={` cursor-pointer
-              w-full text-left p-5 rounded-xl border-2
+              w-full text-left px-5 py-3 rounded-xl border-2
               transition-all
               ${
                 selected
@@ -376,24 +377,24 @@ export default function QuestionnairePage() {
                 {(!isFirstQuestion || !isFirstSet) && (
                   <button
                     onClick={handlePrev}
-                    className="px-6 py-4 rounded-xl cursor-pointer border-2 border-black font-semibold text-black hover:bg-zinc-100 transition active:translate-y-0.5"
+                    className="p-3.5 rounded-full cursor-pointer border-2 border-black font-semibold text-black hover:bg-zinc-100 bg-gray-100 transition active:translate-y-0.5"
                   >
-                    ← Previous
+                    <ChevronLeft size={30} className="font-medium"/>
                   </button>
                 )}
 
                 <button
                   onClick={handleNext}
                   disabled={submitting}
-                  className="flex-1 py-4 px-6 rounded-xl cursor-pointer bg-black text-white font-semibold hover:bg-zinc-800 transition shadow-md active:translate-y-0.5 disabled:opacity-60"
+                  className="flex-1 py-4 px-6 rounded-full cursor-pointer bg-black text-white font-semibold hover:bg-zinc-800 transition shadow-md active:translate-y-0.5 disabled:opacity-60"
                 >
                   {submitting
                     ? "Submitting..."
                     : isLastQuestion
                       ? isLastSet
                         ? "Complete Assessment 🎉"
-                        : "Next Section →"
-                      : "Next Question →"}
+                        : "Next Section "
+                      : "Next Question "}
                 </button>
               </div>
             </motion.div>

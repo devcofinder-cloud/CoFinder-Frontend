@@ -32,7 +32,7 @@ export default function DashboardLayout({
 
   return (
     <div className="">
-      <Navbar />
+      {/* <Navbar /> */}
 
       <main className="">
         {children}
