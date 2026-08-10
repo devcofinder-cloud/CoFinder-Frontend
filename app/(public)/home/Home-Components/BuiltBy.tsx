@@ -30,8 +30,8 @@ export default function BuiltBy() {
     },
   ];
   return (
-    <div className="mx-auto max-w-6xl mt-10">
-      <h1 className="text-5xl text-center font-bold ">
+    <div className="mx-auto max-w-6xl mt-10 px-4 sm:px-6">
+      <h1 className="text-3xl sm:text-4xl md:text-5xl text-center font-bold">
         Built for Founders, By Founders
       </h1>
       <div className=" mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">

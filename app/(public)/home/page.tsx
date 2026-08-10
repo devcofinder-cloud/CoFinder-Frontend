@@ -129,15 +129,13 @@ export default function CofinderLanding() {
   return (
     <div className="min-h-screen  bg-gradient-to-b from-slate-50 via-white to-slate-50 text-slate-900 font-sans antialiased overflow-hidden">
       {/* Background Decorative Blur Gradients */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] pointer-events-none -z-10">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] pointer-events-none -z-10 overflow-hidden">
         <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-indigo-200/40 rounded-full blur-[120px]" />
         <div className="absolute top-[20%] right-[15%] w-[400px] h-[400px] bg-purple-200/30 rounded-full blur-[100px]" />
       </div>
-      {/* --- NAVIGATION BAR --- */}
-      {/* <Navbar /> */}
 
       {/* --- HERO SECTION --- */}
-      <main className="max-w-8xl  mx-auto px-6 pt-12 pb-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-20 overflow-hidden">
         <div className="grid lg:grid-cols-12 gap-12 items-center">
           {/* Hero Content Left */}
           <motion.div
@@ -248,16 +246,16 @@ export default function CofinderLanding() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="lg:col-span-7 relative"
+            className="lg:col-span-7 relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40" />
 
             {/* Soft backdrop glow */}
             <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 rounded-3xl blur-2xl -z-10" />
 
-            <div className="flex items-center justify-center gap-4 py-4">
+            <div className="flex items-center justify-center gap-2 sm:gap-4 py-4 w-full max-w-full overflow-hidden">
               {/* Vertical Sidebar */}
-              <div className="bg-white/80 backdrop-blur-xl border border-slate-200/80 p-3 rounded-2xl shadow-xl flex flex-col gap-6 items-center text-slate-400">
+              <div className="hidden sm:flex bg-white/80 backdrop-blur-xl border border-slate-200/80 p-3 rounded-2xl shadow-xl flex-col gap-6 items-center text-slate-400">
                 <div className="w-8 h-8 rounded-lg bg-indigo-50 text-black flex items-center justify-center">
                   <Sparkles className="w-4 h-4" />
                 </div>
@@ -277,7 +275,7 @@ export default function CofinderLanding() {
               </div>
 
               {/* Main App Cards Stack */}
-              <div className="flex-1 space-y-4 max-w-md">
+              <div className="flex-1 space-y-4 max-w-md w-full min-w-0">
                 {/* Search Bar Header inside mockup */}
                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-lg flex items-center justify-between">
                   <h3 className="font-bold text-slate-800 text-sm">

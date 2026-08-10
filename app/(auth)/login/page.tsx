@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { login } from "@/app/services/auth.service";
 import ResponseModal from "../components/ResponseModal";
 import { useState } from "react";
+import { authStore } from "@/app/store/authStore";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -28,6 +29,8 @@ export default function LoginPage() {
     title: "",
     message: "",
   });
+  
+  const setUser = authStore((state)=>state.setUser)
 
   const onSubmit = async (data: LoginForm) => {
     setPopup({
@@ -40,6 +43,8 @@ export default function LoginPage() {
     try {
       const res = await login(data);
       if (res.success) {
+        setUser(res.data.user)
+        
         localStorage.setItem("token", res.data.token);
        localStorage.setItem("user", JSON.stringify(res.data.user));
 

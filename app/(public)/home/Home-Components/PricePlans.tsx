@@ -61,7 +61,7 @@ export default function PricePlan() {
           Pricing
         </span>
 
-        <h1 className="mt-6 text-5xl font-bold tracking-tight">
+        <h1 className="mt-6 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
           Simple, Founder-friendly Pricing
         </h1>
 
@@ -77,7 +77,7 @@ export default function PricePlan() {
             key={plan.name}
             className={`relative rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
               plan.popular
-                ? "border-black bg-black text-white scale-105"
+                ? "border-black bg-black text-white scale-100 lg:scale-105"
                 : "border-gray-200 bg-white"
             }`}
           >

@@ -13,9 +13,12 @@ import {
   Clock,
   TrendingUp,
 } from "lucide-react";
+import { authStore } from "@/app/store/authStore";
 
 export default function DashboardPage() {
   const appRouter = useRouter();
+
+  const user = authStore((state)=>state.user)
 
   const stats = [
     {
@@ -76,6 +79,8 @@ export default function DashboardPage() {
     { text: "Pitch deck uploaded.", time: "2 days ago" },
   ];
 
+
+
   return (
     <div className="min-h-screen bg-[#fafafa] p-6 sm:p-8 md:p-10 font-sans text-zinc-900">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -89,7 +94,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">
-              Welcome back, Aditya 👋
+              Welcome back, {user?.name} 👋
             </h1>
             <p className="mt-1 text-sm text-zinc-500">
               Here is what is happening across your founder ecosystem today.
@@ -101,6 +106,68 @@ export default function DashboardPage() {
             <span>Create Post</span>
           </button>
         </header>
+        {/* Profile Progress--- hidden in desktop screen  */}
+        <div className="mt-4 block sm:hidden  rounded-2xl border border-zinc-200 bg-white p-4">
+          {/* Status */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zinc-400 opacity-40" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-zinc-900" />
+              </span>
+
+              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                Profile Incomplete
+              </span>
+            </div>
+
+            <span className="text-sm font-bold tracking-tight text-zinc-900">
+              {user?.completionStatus ||0}%
+            </span>
+          </div>
+
+          {/* Progress */}
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
+            <div
+              className="h-full rounded-full bg-zinc-900 transition-all duration-700 ease-out"
+              style={{ width: "72%" }}
+            />
+          </div>
+
+          {/* Bottom */}
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs leading-relaxed text-zinc-500">
+                Complete your profile to unlock{" "}
+                <span className="font-medium text-zinc-800">
+                  better matches.
+                </span>
+              </p>
+
+              <p className="mt-1 text-[11px] font-medium text-zinc-400">
+                28% remaining
+              </p>
+            </div>
+
+            <button
+              onClick={() => appRouter.push("/questionnair")}
+              className="
+        shrink-0 rounded-xl
+        border border-zinc-900
+        bg-zinc-900
+        px-4 py-2.5
+        text-xs font-semibold text-white
+        transition-all duration-200
+        hover:-translate-y-0.5
+        hover:bg-zinc-800
+        hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]
+        active:translate-y-0 cursor-pointer hover:scale-105 
+      "
+            >
+              Complete Profile
+            </button>
+          </div>
+        </div>
 
         {/* Stats Grid */}
         <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -232,30 +299,8 @@ export default function DashboardPage() {
 
           {/* Sidebar Column */}
           <div className="space-y-8">
-            {/* Profile Card */}
-            {/* <section className="rounded-3xl border border-zinc-200/80 bg-white p-6 sm:p-8 text-center shadow-sm">
-              <div className="relative mx-auto h-24 w-24">
-                <div className="flex h-full w-full items-center justify-center rounded-full bg-zinc-900 text-2xl font-bold text-white shadow-md">
-                  AS
-                </div>
-                <div className="absolute bottom-0 right-0 rounded-full border-2 border-white bg-emerald-500 p-1.5 text-white">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                </div>
-              </div>
-
-              <h2 className="mt-4 text-xl font-bold">Aditya Semalti</h2>
-              <p className="text-xs font-medium text-zinc-500">Tech Innovator</p>
-
-              <button
-                onClick={() => appRouter.push("/profile")}
-                className="mt-6 w-full rounded-2xl bg-zinc-900 py-3 text-xs font-semibold text-white shadow-sm transition hover:bg-black hover:shadow active:scale-98"
-              >
-                Edit Profile
-              </button>
-            </section> */}
-
-            {/* Profile Progress */}
-            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
+            \{/* Profile Progress--- hidden in mobile screen  */}
+            <div className="mt-4  hidden sm:block rounded-2xl border border-zinc-200 bg-white p-4">
               {/* Status */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -270,7 +315,7 @@ export default function DashboardPage() {
                 </div>
 
                 <span className="text-sm font-bold tracking-tight text-zinc-900">
-                  72%
+                {user?.completionStatus ||0}%
                 </span>
               </div>
 
@@ -298,8 +343,7 @@ export default function DashboardPage() {
                 </div>
 
                 <button
-
-                onClick={()=>appRouter.push('/questionnair')}
+                  onClick={() => appRouter.push("/questionnair")}
                   className="
         shrink-0 rounded-xl
         border border-zinc-900
@@ -313,13 +357,12 @@ export default function DashboardPage() {
         active:translate-y-0 cursor-pointer hover:scale-105 
       "
                 >
-                  Complete Profile 
+                  Complete Profile
                 </button>
               </div>
             </div>
-
             {/* AI Suggestion Card */}
-            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 p-6 text-white shadow-xl shadow-zinc-900/10">
+            <section className="relative overflow-hidden mb-20 sm:mb-0 rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 p-6 text-white shadow-xl shadow-zinc-900/10">
               <div className="flex items-center gap-2 text-zinc-400">
                 <Sparkles className="h-4 w-4 text-white" />
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em]">
@@ -337,7 +380,9 @@ export default function DashboardPage() {
                 founder matches.
               </p>
 
-              <button className="mt-5 w-full rounded-xl bg-white py-2.5 text-xs font-bold text-zinc-900 transition hover:bg-zinc-100 active:scale-98">
+              <button
+              onClick={()=>appRouter.push('/profile')}
+              className="mt-5 w-full cursor-pointer rounded-xl bg-white py-2.5 text-xs font-bold text-zinc-900 transition hover:bg-zinc-100 active:scale-98">
                 Improve Profile
               </button>
             </section>

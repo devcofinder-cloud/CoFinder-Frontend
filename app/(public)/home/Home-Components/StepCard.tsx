@@ -55,7 +55,7 @@ export default function StepCard({
       {!last && (
 
         <ArrowRight
-          className="hidden lg:block absolute top-10 -right-20 text-gray-300"
+          className="hidden xl:block absolute top-10 -right-8 text-gray-300"
           size={40}
         />
 

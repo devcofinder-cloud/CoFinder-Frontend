@@ -25,15 +25,18 @@ export default function DashboardLayout({
     setChecking(false);
   }, [router]);
 
+  // Token check hone tak kuch render nahi hoga
   if (checking) {
-    return <div className="min-h-screen bg-white" />;
+    return null;
   }
 
   return (
     <div className="">
       <Navbar />
 
-      <main className="flex-1">{children}</main>
+      <main className="">
+        {children}
+      </main>
 
       <Footer />
     </div>
