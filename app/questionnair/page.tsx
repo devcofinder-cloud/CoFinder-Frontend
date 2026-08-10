@@ -294,7 +294,7 @@ export default function QuestionnairePage() {
               animate="center"
               exit="exit"
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="bg-white border-2 border-black rounded-3xl px-2 py-4 md:p-12  relative"
+              className="bg-white border-2 border-gray-400 shadow-2xl rounded-3xl px-2 py-4 md:p-12  relative"
             >
               {/* Progress Bar */}
               <div className="mb-8">
