@@ -83,7 +83,7 @@ export default function QuestionnairePage() {
   const isFirstQuestion = currentQuestion === 0;
   const isLastQuestion = currentQuestion === activeSet.questions.length - 1;
 
-  const appRouter = useRouter()
+  const appRouter = useRouter();
 
   const fetchQuestions = async (setNumber: number) => {
     try {
@@ -160,8 +160,6 @@ export default function QuestionnairePage() {
 
         return;
       }
-
-      
 
       // All sets completed
       showModal(
@@ -379,7 +377,7 @@ export default function QuestionnairePage() {
                     onClick={handlePrev}
                     className="p-3.5 rounded-full cursor-pointer border-2 border-black font-semibold text-black hover:bg-zinc-100 bg-gray-100 transition active:translate-y-0.5"
                   >
-                    <ChevronLeft size={30} className="font-medium"/>
+                    <ChevronLeft size={30} className="font-medium" />
                   </button>
                 )}
 

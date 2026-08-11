@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   Grid2X2,
   Compass,
-  Zap,
+  Bot,
   MessageCircle,
   User,
 } from "lucide-react";
@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation";
 const tabs = [
   { id: "home", icon: Grid2X2 },
   { id: "explore", icon: Compass },
-  { id: "activity", icon: Zap },
+  { id: "bot", icon: Bot },
   { id: "chat", icon: MessageCircle },
   { id: "profile", icon: User },
 ];
