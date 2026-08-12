@@ -132,7 +132,9 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-black hover:shadow-md active:scale-95">
+          <button
+          onClick={()=>appRouter.push('/create-post')}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-black hover:shadow-md active:scale-95">
             <Plus className="h-4 w-4" />
             <span>Create Post</span>
           </button>
