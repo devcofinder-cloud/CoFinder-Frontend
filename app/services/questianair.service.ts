@@ -7,7 +7,7 @@ export const getQuestions = async () => {
 };
 
 export const submitQuestionnaire = async (data: any) => {
-  const response = await api.post("/user/questionnaire", data);
+  const response = await api.post("/user/questions/questionnaire", data);
 
   return response.data;
 };
