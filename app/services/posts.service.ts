@@ -5,7 +5,7 @@ export const createPost = (data: FormData) => {
   return api.post("/posts", data);
 };
 export const getMyPosts = ()=>{
-    return api.get('/posts')
+    return api.get('/posts/my-post')
 }
 
 

@@ -635,14 +635,14 @@ function MyPostCard({
         </button>
       </div>
       <AnimatePresence>
-  {showDelete && (
-    <DeleteConfirmModal
-      deleting={deleting}
-      onClose={() => setShowDelete(false)}
-      onConfirm={handleDelete}
-    />
-  )}
-</AnimatePresence>
+        {showDelete && (
+          <DeleteConfirmModal
+            deleting={deleting}
+            onClose={() => setShowDelete(false)}
+            onConfirm={handleDelete}
+          />
+        )}
+      </AnimatePresence>
     </motion.article>
   );
 }
@@ -781,6 +781,16 @@ function CreatePostModal({
       media.forEach((item) => {
         formData.append("media", item.file);
       });
+
+      console.log("MEDIA STATE:", media);
+
+      media.forEach((item) => {
+        console.log("FILE:", item.file);
+      });
+
+      for (const [key, value] of formData.entries()) {
+        console.log("FORM DATA:", key, value);
+      }
 
       await createPost(formData);
 
@@ -1204,8 +1214,6 @@ function EmptyState({
   );
 }
 
-
-
 function DeleteConfirmModal({
   deleting,
   onClose,
@@ -1258,10 +1266,7 @@ function DeleteConfirmModal({
             }}
             className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50"
           >
-            <Trash2
-              size={20}
-              className="text-red-500"
-            />
+            <Trash2 size={20} className="text-red-500" />
           </motion.div>
 
           <button
@@ -1280,8 +1285,8 @@ function DeleteConfirmModal({
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-zinc-500">
-            This action cannot be undone. Your post and its
-            associated media will be permanently removed.
+            This action cannot be undone. Your post and its associated media
+            will be permanently removed.
           </p>
         </div>
 
@@ -1302,10 +1307,7 @@ function DeleteConfirmModal({
           >
             {deleting ? (
               <>
-                <Loader2
-                  size={16}
-                  className="animate-spin"
-                />
+                <Loader2 size={16} className="animate-spin" />
                 Deleting...
               </>
             ) : (
