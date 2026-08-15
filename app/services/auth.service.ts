@@ -31,3 +31,8 @@ export const register = async (data: RegisterPayload) => {
   const response = await api.post("/user/register", data);
   return response.data;
 };
+
+
+export const getProfile = ()=>{
+  return api.get('/user/me')
+}
