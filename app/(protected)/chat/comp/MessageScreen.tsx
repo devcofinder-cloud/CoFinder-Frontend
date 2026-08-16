@@ -213,20 +213,49 @@ export default function MessageScreen({
     | NEW MESSAGE
     |--------------------------------------------------------------------------
     */
-    socket.on("new_message", (newMessage: Message) => {
-      console.log("Realtime message received:", newMessage);
+    socket.on("new_message", (newMessage) => {
+      console.log("🔥 NEW MESSAGE RECEIVED:", newMessage);
 
-      if (String(newMessage.conversationId) !== String(conversationId)) {
+      const incomingConversationId =
+        newMessage.conversationId ||
+        newMessage.conversation?._id ||
+        newMessage.conversation;
+
+      console.log("📌 Current conversation:", conversationId);
+
+      console.log("📌 Incoming conversation:", incomingConversationId);
+
+      if (!incomingConversationId) {
+        console.error("❌ Conversation ID missing from socket message");
         return;
       }
 
-      addMessage(newMessage);
+      if (String(incomingConversationId) !== String(conversationId)) {
+        console.log("❌ Different conversation");
+        return;
+      }
 
-      if (String(newMessage.senderId) !== String(currentUserId)) {
+      const senderId = newMessage.senderId || newMessage.sender?._id;
+
+      const normalizedMessage: Message = {
+        ...newMessage,
+
+        conversationId: String(incomingConversationId),
+
+        senderId: String(senderId),
+
+        receiverId:
+          newMessage.receiverId || newMessage.receiver?._id || undefined,
+      };
+
+      console.log("✅ ADDING REALTIME MESSAGE:", normalizedMessage);
+
+      addMessage(normalizedMessage);
+
+      if (String(senderId) !== String(currentUserId)) {
         setTyping(false);
       }
     });
-
     /*
     |--------------------------------------------------------------------------
     | USER TYPING
