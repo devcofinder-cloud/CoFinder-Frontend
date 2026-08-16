@@ -21,10 +21,14 @@ import {
   Send,
   CheckCircle2,
   Globe,
-  DoorOpen,
+  LogOut,
+  MoreVertical,
+  Pencil,
+  X,
 } from "lucide-react";
 
 import { authStore } from "@/app/store/authStore";
+import { useRouter } from "next/navigation";
 
 /* ------------------------------------------------------------------ */
 /* Static Data                                                        */
@@ -68,7 +72,11 @@ const professionalTraits = [
     label: "Consultant background",
     detail: "6 years client-side",
   },
-  { icon: Wallet, label: "Bootstrapping", detail: "No outside capital, yet" },
+  {
+    icon: Wallet,
+    label: "Bootstrapping",
+    detail: "No outside capital, yet",
+  },
   {
     icon: Award,
     label: "Third build",
@@ -115,13 +123,21 @@ const links = [
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<Tab>("Personal");
+
   const [ideas, setIdeas] = useState(initialIdeas);
+
   const [likedIdeas, setLikedIdeas] = useState<Record<string, boolean>>({});
   const [votedIdeas, setVotedIdeas] = useState<Record<string, boolean>>({});
   const [bookmarkedIdeas, setBookmarkedIdeas] = useState<
     Record<string, boolean>
   >({});
+
   const [isMessageSent, setIsMessageSent] = useState(false);
+
+  // Mobile edit menu
+  const [isEditMenuOpen, setIsEditMenuOpen] = useState(false);
+
+  const appRouter = useRouter();
 
   /* -------------------------------------------------------------- */
   /* Auth Store                                                      */
@@ -136,6 +152,15 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  /* -------------------------------------------------------------- */
+  /* Edit Profile                                                    */
+  /* -------------------------------------------------------------- */
+
+  const handleEditProfile = () => {
+    setIsEditMenuOpen(false);
+    appRouter.push("/profile/edit");
+  };
 
   /* -------------------------------------------------------------- */
   /* Like                                                            */
@@ -160,7 +185,7 @@ export default function ProfilePage() {
   };
 
   /* -------------------------------------------------------------- */
-  /* Vote                                                            */
+  /* Vote                                                             */
   /* -------------------------------------------------------------- */
 
   const toggleVote = (id: string) => {
@@ -182,7 +207,7 @@ export default function ProfilePage() {
   };
 
   /* -------------------------------------------------------------- */
-  /* Bookmark                                                       */
+  /* Bookmark                                                        */
   /* -------------------------------------------------------------- */
 
   const toggleBookmark = (id: string) => {
@@ -199,6 +224,8 @@ export default function ProfilePage() {
   const handleSendMessage = () => {
     setIsMessageSent(true);
 
+    appRouter.push("/chat");
+
     setTimeout(() => {
       setIsMessageSent(false);
     }, 3000);
@@ -213,6 +240,7 @@ export default function ProfilePage() {
       <main className="flex min-h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-black border-t-transparent" />
+
           <p className="text-sm font-medium text-neutral-500">
             Loading profile...
           </p>
@@ -224,7 +252,6 @@ export default function ProfilePage() {
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-white font-sans text-black antialiased selection:bg-black selection:text-white">
       <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-1 gap-10 px-6 py-12 lg:grid-cols-[360px_1fr] lg:py-20">
-
         {/* ---------------------------------------------------- */}
         {/* PROFILE SIDEBAR                                      */}
         {/* ---------------------------------------------------- */}
@@ -238,9 +265,88 @@ export default function ProfilePage() {
           }}
           className="sticky top-12 h-fit"
         >
-          <div className="flex flex-col items-center rounded-3xl border border-black/10 bg-white p-8 text-black shadow-sm">
+          <div className="relative flex flex-col items-center rounded-3xl border border-black/10 bg-white p-8 text-black shadow-sm">
+            {/* ================================================== */}
+            {/* DESKTOP EDIT BUTTON                                */}
+            {/* ================================================== */}
 
-            {/* Avatar */}
+            <button
+              onClick={handleEditProfile}
+              className="absolute right-6 top-6 hidden items-center gap-2 rounded-full border border-black/10 bg-neutral-50 px-4 py-2 text-xs font-bold text-black transition-all hover:bg-black hover:text-white sm:flex"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </button>
+
+            {/* ================================================== */}
+            {/* MOBILE THREE DOTS                                  */}
+            {/* ================================================== */}
+
+            <div className="absolute right-4 top-4 sm:hidden">
+              <button
+                onClick={() => setIsEditMenuOpen((prev) => !prev)}
+                aria-label="Profile options"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-neutral-50 text-black transition hover:bg-black hover:text-white"
+              >
+                <MoreVertical className="h-5 w-5" />
+              </button>
+
+              {/* Mobile Popup */}
+              <AnimatePresence>
+                {isEditMenuOpen && (
+                  <>
+                    {/* Click outside */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsEditMenuOpen(false)}
+                    />
+
+                    <motion.div
+                      initial={{
+                        opacity: 0,
+                        scale: 0.95,
+                        y: -5,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        scale: 1,
+                        y: 0,
+                      }}
+                      exit={{
+                        opacity: 0,
+                        scale: 0.95,
+                        y: -5,
+                      }}
+                      transition={{
+                        duration: 0.15,
+                      }}
+                      className="absolute right-0 top-11 z-50 w-44 overflow-hidden rounded-2xl border border-black/10 bg-white p-1.5 shadow-xl"
+                    >
+                      <button
+                        onClick={handleEditProfile}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-black transition hover:bg-neutral-100"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit Profile
+                      </button>
+
+                      <button
+                        onClick={() => setIsEditMenuOpen(false)}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-neutral-500 transition hover:bg-neutral-100"
+                      >
+                        <X className="h-4 w-4" />
+                        Close
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* ================================================== */}
+            {/* Avatar                                             */}
+            {/* ================================================== */}
+
             <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-black/10 bg-neutral-100 text-4xl">
               {user?.profileImage ? (
                 <img
@@ -255,9 +361,11 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* User Details */}
-            <div className="mt-6 w-full text-center">
+            {/* ================================================== */}
+            {/* User Details                                      */}
+            {/* ================================================== */}
 
+            <div className="mt-6 w-full text-center">
               {/* Username / Name */}
               <div className="inline-block rounded-full bg-black px-6 py-2 text-sm font-semibold text-white">
                 {user?.name || "Username"}
@@ -309,7 +417,10 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Tab Pill Selector */}
+            {/* ================================================== */}
+            {/* Tab Pill Selector                                 */}
+            {/* ================================================== */}
+
             <div className="mt-8 flex w-full justify-between rounded-full bg-neutral-100 p-1.5">
               {TABS.map((tab) => {
                 const isActive = activeTab === tab;
@@ -343,7 +454,10 @@ export default function ProfilePage() {
               })}
             </div>
 
-            {/* Social Links */}
+            {/* ================================================== */}
+            {/* Social Links                                      */}
+            {/* ================================================== */}
+
             <div className="mt-6 flex items-center justify-center gap-3">
               {links.map(({ icon: Icon, label, href }) => (
                 <a
@@ -357,7 +471,10 @@ export default function ProfilePage() {
               ))}
             </div>
 
-            {/* Message */}
+            {/* ================================================== */}
+            {/* Message                                           */}
+            {/* ================================================== */}
+
             <button
               onClick={handleSendMessage}
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-black py-3 text-xs font-bold tracking-wide text-white transition-opacity hover:opacity-90"
@@ -365,7 +482,7 @@ export default function ProfilePage() {
               {isMessageSent ? (
                 <>
                   <CheckCircle2 className="h-4 w-4" />
-                  Message Sent
+                  Loading Chats...
                 </>
               ) : (
                 <>
@@ -376,8 +493,11 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* Logout */}
-          <div className="mt-5 w-full">
+          {/* ==================================================== */}
+          {/* Desktop Logout                                      */}
+          {/* ==================================================== */}
+
+          <div className="mx-auto mt-5 hidden w-2/3 sm:block">
             <button
               onClick={() => {
                 localStorage.clear();
@@ -386,7 +506,7 @@ export default function ProfilePage() {
               className="flex w-full cursor-pointer items-center justify-center gap-5 rounded-xl border border-zinc-200 bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:border-black hover:bg-zinc-50 hover:text-black active:scale-95"
             >
               Logout
-              <DoorOpen />
+              <LogOut />
             </button>
           </div>
         </motion.aside>
@@ -397,8 +517,10 @@ export default function ProfilePage() {
 
         <div className="relative mb-10 sm:m-0">
           <AnimatePresence mode="wait">
+            {/* ================================================== */}
+            {/* PERSONAL                                          */}
+            {/* ================================================== */}
 
-            {/* PERSONAL */}
             {activeTab === "Personal" && (
               <TabPanel key="personal">
                 <SectionHeader
@@ -411,21 +533,25 @@ export default function ProfilePage() {
                 <BioBlocks
                   a={{
                     title: "About Me",
-                    body:
-                      "Build your profile to tell potential co-founders more about your working style, personality, and goals.",
+                    body: "Build your profile to tell potential co-founders more about your working style, personality, and goals.",
                   }}
                   b={{
                     title: "Profile Status",
                     body:
                       user?.completionStatus === 100
                         ? "Your profile is complete and ready to connect."
-                        : `Your profile is ${user?.completionStatus || 0}% complete. Complete your profile to improve your chances of finding the right co-founder.`,
+                        : `Your profile is ${
+                            user?.completionStatus || 0
+                          }% complete. Complete your profile to improve your chances of finding the right co-founder.`,
                   }}
                 />
               </TabPanel>
             )}
 
-            {/* PROFESSIONAL */}
+            {/* ================================================== */}
+            {/* PROFESSIONAL                                      */}
+            {/* ================================================== */}
+
             {activeTab === "Professional" && (
               <TabPanel key="professional">
                 <SectionHeader
@@ -438,19 +564,20 @@ export default function ProfilePage() {
                 <BioBlocks
                   a={{
                     title: "My Superpower",
-                    body:
-                      "Turning a shaky MVP into something that ships. Bootstrapped two products from zero to first revenue.",
+                    body: "Turning a shaky MVP into something that ships. Bootstrapped two products from zero to first revenue.",
                   }}
                   b={{
                     title: "What I'm Looking For",
-                    body:
-                      "A technical counterpart who trusts the numbers as much as the vision.",
+                    body: "A technical counterpart who trusts the numbers as much as the vision.",
                   }}
                 />
               </TabPanel>
             )}
 
-            {/* IDEAS */}
+            {/* ================================================== */}
+            {/* IDEAS                                             */}
+            {/* ================================================== */}
+
             {activeTab === "Ideas" && (
               <TabPanel key="ideas">
                 <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -499,9 +626,7 @@ export default function ProfilePage() {
                           </span>
 
                           <button
-                            onClick={() =>
-                              toggleBookmark(idea.id)
-                            }
+                            onClick={() => toggleBookmark(idea.id)}
                             className="text-neutral-400 transition-colors hover:text-black"
                           >
                             <Bookmark
@@ -524,12 +649,9 @@ export default function ProfilePage() {
 
                         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-black/10 pt-6">
                           <div className="flex items-center gap-6 text-xs font-semibold text-neutral-600">
-
                             {/* Like */}
                             <button
-                              onClick={() =>
-                                toggleLike(idea.id)
-                              }
+                              onClick={() => toggleLike(idea.id)}
                               className="flex items-center gap-2 hover:text-black"
                             >
                               <Heart
@@ -540,9 +662,7 @@ export default function ProfilePage() {
                                 }`}
                               />
 
-                              <span>
-                                {idea.likes}
-                              </span>
+                              <span>{idea.likes}</span>
                             </button>
 
                             {/* Comments */}
@@ -553,22 +673,16 @@ export default function ProfilePage() {
 
                             {/* Vote */}
                             <button
-                              onClick={() =>
-                                toggleVote(idea.id)
-                              }
+                              onClick={() => toggleVote(idea.id)}
                               className="flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 hover:bg-neutral-200"
                             >
                               <ArrowUp
                                 className={`h-4 w-4 ${
-                                  isVoted
-                                    ? "stroke-[3]"
-                                    : ""
+                                  isVoted ? "stroke-[3]" : ""
                                 }`}
                               />
 
-                              <span>
-                                {idea.votes}
-                              </span>
+                              <span>{idea.votes}</span>
                             </button>
                           </div>
 
@@ -583,6 +697,23 @@ export default function ProfilePage() {
               </TabPanel>
             )}
           </AnimatePresence>
+
+          {/* ==================================================== */}
+          {/* Mobile Logout                                        */}
+          {/* ==================================================== */}
+
+          <div className="mx-auto mb-5 mt-5 block w-full sm:hidden">
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.reload();
+              }}
+              className="flex w-full cursor-pointer items-center justify-center gap-5 rounded-xl border border-zinc-200 bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:border-black hover:bg-zinc-50 hover:text-black active:scale-95"
+            >
+              Logout
+              <LogOut />
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -653,20 +784,18 @@ function TraitList({
   return (
     <div className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
       <div className="divide-y divide-black/10">
-        {traits.map(
-          ({ icon: Icon, label }, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0"
-            >
-              <Icon className="h-5 w-5 shrink-0 text-black" />
+        {traits.map(({ icon: Icon, label }, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0"
+          >
+            <Icon className="h-5 w-5 shrink-0 text-black" />
 
-              <span className="text-sm font-semibold text-black">
-                {label}
-              </span>
-            </div>
-          ),
-        )}
+            <span className="text-sm font-semibold text-black">
+              {label}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -687,7 +816,6 @@ function BioBlocks({
 }) {
   return (
     <div className="mt-6 flex flex-col gap-4">
-
       {/* Light Card */}
       <div className="rounded-3xl bg-neutral-100 p-8 text-black">
         <p className="text-xs font-bold tracking-tight text-neutral-600">

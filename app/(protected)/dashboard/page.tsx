@@ -135,8 +135,8 @@ export default function DashboardPage() {
           <button
           onClick={()=>appRouter.push('/create-post')}
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-black hover:shadow-md active:scale-95">
-            <Plus className="h-4 w-4" />
-            <span>Create Post</span>
+            {/* <Plus className="h-4 w-4" /> */}
+            <span>My Posts</span>
           </button>
         </header>
         {/* Profile Progress--- hidden in desktop screen  */}
