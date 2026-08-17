@@ -5,4 +5,7 @@ export const getOtherUsers=()=>{
 }
 
 
+export const getOtherPosts=()=>{
+    return api.get('/dashboard/explore')
+}
 

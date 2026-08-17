@@ -207,7 +207,8 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
                       {user?.name || "User"}
                     </h3>
 
-                    {/* <span
+
+                    <span
                       className="
                         shrink-0 text-[11px]
                         text-zinc-400
@@ -216,7 +217,7 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
                       {formatTime(
                         chat.lastMessageAt
                       )}
-                    </span> */}
+                    </span>
                   </div>
 
                   {/* <p
