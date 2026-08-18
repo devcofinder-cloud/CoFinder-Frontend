@@ -13,6 +13,7 @@ import {
   Video,
 } from "lucide-react";
 import { dashboardStore } from "@/app/store/dashboardStore";
+import { useRouter } from "next/navigation";
 
 const categories = [
   "All",
@@ -279,6 +280,8 @@ export default function ExplorePage() {
 function FounderPostCard({ post }: { post: ExplorePost }) {
   const authorName = post.author?.name || "Unknown Founder";
 
+  const appRouter = useRouter()
+
   const initials = authorName
     .split(" ")
     .map((name) => name.charAt(0))
@@ -307,7 +310,9 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
       <div className="p-5">
         {/* ================= PROFILE ================= */}
 
-        <div className="flex items-center gap-3">
+        <div
+        onClick={()=>appRouter.push(`/user-profile/${post?.author?._id}`)}
+        className="flex items-center gap-3">
           {/* Profile Image */}
 
           {post.author?.profileImage ? (
