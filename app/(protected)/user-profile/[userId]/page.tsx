@@ -12,7 +12,6 @@ import {
   Clock3,
   Code2,
   ExternalLink,
-  Github,
   GraduationCap,
   MapPin,
   MessageCircle,
