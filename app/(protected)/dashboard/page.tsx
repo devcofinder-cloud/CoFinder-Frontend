@@ -13,12 +13,21 @@ import {
   Clock,
   TrendingUp,
 } from "lucide-react";
+
+
 import { authStore } from "@/app/store/authStore";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
   const appRouter = useRouter();
 
-  const user = authStore((state) => state.user);
+  // const user = authStore((state) => state.user);
+  const user = authStore((state)=>state.user)
+  const fetchProfile = authStore((state)=>state.fetchProfile)
+
+  useEffect(()=>{
+    fetchProfile();
+  })
 
   const stats = [
     {

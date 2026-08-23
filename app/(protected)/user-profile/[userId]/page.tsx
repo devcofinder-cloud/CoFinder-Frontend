@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -27,6 +27,7 @@ import {
 
 import { dashboardStore } from "@/app/store/dashboardStore";
 import { useChatStore } from "@/app/store/chatStore";
+import { authStore } from "@/app/store/authStore";
 
 /* =========================================================
    ANIMATION
@@ -41,7 +42,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: {
     opacity: 0,
     y: 20,
@@ -56,7 +57,6 @@ const itemVariants = {
     },
   },
 };
-
 /* =========================================================
    PAGE
 ========================================================= */
@@ -68,11 +68,25 @@ export default function UserProfilePage() {
   const userId = typeof params?.userId === "string" ? params.userId : "";
 
   const { userData, loadingProfile, fetchProfileById } = dashboardStore();
-  const {createConversation} = useChatStore()
 
-  /* =======================================================
-     FETCH PROFILE
-  ======================================================= */
+  const { user: currentUser } = authStore();
+
+  const { createNewConversation } = useChatStore();
+
+  const { updateProfile, updatingProfile } = authStore();
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    username: "",
+    displayName: "",
+    location: "",
+    age: "",
+    gender: "",
+  });
 
   useEffect(() => {
     if (!userId) return;
@@ -89,6 +103,43 @@ export default function UserProfilePage() {
   }
 
   const { user, professionalProfile } = userData;
+
+  const isOwnProfile = currentUser?._id === user._id;
+
+  const openEditProfile = () => {
+    setFormData({
+      name: user.name || "",
+      username: user.username || "",
+      displayName: user.displayName || "",
+      location: user.location || "",
+      age: user.age ? String(user.age) : "",
+      gender: user.gender || "",
+    });
+
+    setProfileImage(null);
+    setIsEditOpen(true);
+  };
+
+  const handleEditProfile = async () => {
+    try {
+      await updateProfile({
+        name: formData.name,
+        username: formData.username,
+        displayName: formData.displayName,
+        location: formData.location,
+        age: formData.age ? Number(formData.age) : undefined,
+        gender: formData.gender,
+        profileImage: profileImage || undefined,
+      });
+
+      setIsEditOpen(false);
+
+      // Dashboard profile ko bhi refresh kar do
+      await fetchProfileById(userId);
+    } catch (error) {
+      console.error("Profile update failed:", error);
+    }
+  };
 
   /* =======================================================
      CHAT
@@ -256,24 +307,40 @@ export default function UserProfilePage() {
               {/* Actions */}
 
               <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
-                <motion.button
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleChat}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-6 text-xs font-bold text-white shadow-lg shadow-zinc-200 transition hover:bg-zinc-800"
-                >
-                  <MessageCircle size={16} />
-                  Chat with {user.name.split(" ")[0]}
-                </motion.button>
+                {isOwnProfile && (
+                  <motion.button
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={openEditProfile}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-5 text-xs font-bold text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950"
+                  >
+                    <User size={15} />
+                    Edit Profile
+                  </motion.button>
+                )}
 
-                <motion.button
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-5 text-xs font-bold text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950"
-                >
-                  <Users size={15} />
-                  Connect
-                </motion.button>
+                {!isOwnProfile && (
+                  <motion.button
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleChat}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl bg-zinc-950 px-6 text-xs font-bold text-white shadow-lg shadow-zinc-200 transition hover:bg-zinc-800"
+                  >
+                    <MessageCircle size={16} />
+                    Chat with {user.name.split(" ")[0]}
+                  </motion.button>
+                )}
+
+                {!isOwnProfile && (
+                  <motion.button
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-5 text-xs font-bold text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950"
+                  >
+                    <Users size={15} />
+                    Connect
+                  </motion.button>
+                )}
               </div>
             </div>
 
@@ -817,6 +884,198 @@ export default function UserProfilePage() {
           </div>
         </div>
       </motion.main>
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0.95,
+              y: 15,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+            }}
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8"
+          >
+            {/* Header */}
+
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-zinc-950">
+                  Edit Profile
+                </h2>
+
+                <p className="mt-1 text-xs text-zinc-400">
+                  Update your personal profile information
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsEditOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-lg text-zinc-500 transition hover:bg-zinc-200 hover:text-zinc-950"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Profile Image */}
+
+            <div className="mt-7 flex flex-col items-center">
+              <div className="relative">
+                {profileImage ? (
+                  <img
+                    src={URL.createObjectURL(profileImage)}
+                    alt="Profile preview"
+                    className="h-24 w-24 rounded-2xl object-cover ring-4 ring-zinc-100"
+                  />
+                ) : user.profileImage ? (
+                  <img
+                    src={user.profileImage}
+                    alt={user.name}
+                    className="h-24 w-24 rounded-2xl object-cover ring-4 ring-zinc-100"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-2xl bg-zinc-950 text-2xl font-bold text-white">
+                    {getInitials(user.name)}
+                  </div>
+                )}
+
+                <label className="absolute -bottom-2 -right-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-zinc-950 text-white shadow-lg transition hover:bg-zinc-800">
+                  <ArrowUpRight size={15} />
+
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+
+                      if (file) {
+                        setProfileImage(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
+              <p className="mt-3 text-[10px] text-zinc-400">
+                Upload a new profile image
+              </p>
+            </div>
+
+            {/* Form */}
+
+            <div className="mt-7 space-y-4">
+              <InputField
+                label="Name"
+                value={formData.name}
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    name: value,
+                  }))
+                }
+              />
+
+              <InputField
+                label="Username"
+                value={formData.username}
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    username: value,
+                  }))
+                }
+              />
+
+              <InputField
+                label="Display Name"
+                value={formData.displayName}
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    displayName: value,
+                  }))
+                }
+              />
+
+              <InputField
+                label="Location"
+                value={formData.location}
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    location: value,
+                  }))
+                }
+              />
+
+              <InputField
+                label="Age"
+                type="number"
+                value={formData.age}
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    age: value,
+                  }))
+                }
+              />
+
+              <div>
+                <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  Gender
+                </label>
+
+                <select
+                  value={formData.gender}
+                  onChange={(event) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      gender: event.target.value,
+                    }))
+                  }
+                  className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-xs font-medium text-zinc-900 outline-none transition focus:border-zinc-950"
+                >
+                  <option value="">Select gender</option>
+
+                  <option value="Male">Male</option>
+
+                  <option value="Female">Female</option>
+
+                  <option value="Non-Binary">Non-Binary</option>
+
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Actions */}
+
+            <div className="mt-7 flex gap-3">
+              <button
+                type="button"
+                disabled={updatingProfile}
+                onClick={() => setIsEditOpen(false)}
+                className="h-11 flex-1 rounded-xl border border-zinc-200 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={updatingProfile}
+                onClick={handleEditProfile}
+                className="h-11 flex-1 rounded-xl bg-zinc-950 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {updatingProfile ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
@@ -984,6 +1243,36 @@ function ProfileSkeleton() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+function InputField({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+        {label}
+      </label>
+
+      <input
+        type={type}
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 text-xs font-medium text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-950"
+      />
     </div>
   );
 }

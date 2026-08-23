@@ -5,6 +5,7 @@ import { Search, MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { getConversation, Conversation } from "@/app/services/chat.service";
+import { useChatStore } from "@/app/store/chatStore";
 
 interface ChatListProps {
   activeConversationId?: string;
@@ -12,6 +13,10 @@ interface ChatListProps {
 
 export default function ChatList({ activeConversationId }: ChatListProps) {
   const router = useRouter();
+
+  const unreadCounts = useChatStore((state) => state.unreadCounts);
+
+  const fetchUnreadCount = useChatStore((state) => state.fetchUnreadCount);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +41,16 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
 
     loadConversations();
   }, []);
+
+  useEffect(() => {
+    if (!conversations.length) return;
+
+    conversations.forEach((conversation) => {
+      if (!conversation._id) return;
+
+      fetchUnreadCount(conversation._id);
+    });
+  }, [conversations, fetchUnreadCount]);
 
   const currentUser =
     typeof window !== "undefined"
@@ -114,23 +129,15 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search conversations..."
-            className="
-              h-11 w-full rounded-xl
-              border border-zinc-200
-              bg-zinc-50 pl-10 pr-4
-              text-sm text-zinc-900
-              outline-none transition
-              placeholder:text-zinc-400
-              focus:border-zinc-400
-              focus:bg-white
-            "
+            className=" h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm text-zinc-900 outline-none transition
+              placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white "
           />
         </div>
       </div>
 
       {/* CONVERSATIONS */}
 
-      <div className="h-[calc(100%-145px)] overflow-y-auto">
+      <div className="h-[calc(100%-145px)] overflow-y-auto p-2">
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-3 p-8">
             <div className="relative h-8 w-8">
@@ -148,22 +155,20 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
           </div>
         ) : (
           filteredConversations.map((chat) => {
+            if (!chat._id) return null;
+
             const user = getOtherParticipant(chat);
 
             const isActive = activeConversationId === chat._id;
 
+            const unread = unreadCounts[chat._id] || 0;
             return (
               <button
                 key={chat._id}
                 onClick={() => {
                   router.push(`/chat/${chat._id}`);
                 }}
-                className={`
-                  flex w-full items-center gap-3
-                  border-b border-zinc-100
-                  px-4 py-4 text-left
-                  transition
-
+                className={` flex w-full rounded-2xl shadow-lg items-center gap-3 border-b border-zinc-100 px-4 py-4 text-left transition
                   ${isActive ? "bg-zinc-100" : "hover:bg-zinc-50"}
                 `}
               >
@@ -207,17 +212,17 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
                       {user?.name || "User"}
                     </h3>
 
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="text-[11px] text-zinc-400">
+                        {formatTime(chat.lastMessageAt)}
+                      </span>
 
-                    <span
-                      className="
-                        shrink-0 text-[11px]
-                        text-zinc-400
-                      "
-                    >
-                      {formatTime(
-                        chat.lastMessageAt
+                      {unread > 0 && (
+                        <span className="flex min-w-5 h-5 items-center justify-center rounded-full bg-zinc-950 px-1.5 text-[10px] font-bold text-white">
+                          {unread > 99 ? "99+" : unread}
+                        </span>
                       )}
-                    </span>
+                    </div>
                   </div>
 
                   {/* <p

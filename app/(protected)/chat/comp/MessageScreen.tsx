@@ -11,6 +11,10 @@ import {
   Paperclip,
   Smile,
   ArrowLeft,
+  X,
+  Pencil,
+  Trash2,
+  Reply,
 } from "lucide-react";
 
 import { Message } from "@/app/services/chat.service";
@@ -41,6 +45,17 @@ export default function MessageScreen({
   const [typing, setTyping] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const touchStartXRef = useRef<number | null>(null);
+
+  const touchStartYRef = useRef<number | null>(null);
+
+  const isLongPressRef = useRef(false);
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -361,6 +376,146 @@ export default function MessageScreen({
       setTyping(false);
     };
   }, [conversationId, currentUserId, addMessage]);
+  /*
+|--------------------------------------------------------------------------
+| MESSAGE REPLY
+|--------------------------------------------------------------------------
+*/
+
+  const handleReply = (msg: Message) => {
+    setReplyingTo(msg);
+    setSelectedMessage(null);
+  };
+
+  /*
+|--------------------------------------------------------------------------
+| LONG PRESS
+|--------------------------------------------------------------------------
+*/
+
+  const handleMessageTouchStart = (e: React.TouchEvent, msg: Message) => {
+    const touch = e.touches[0];
+
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
+
+    isLongPressRef.current = false;
+
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      setSelectedMessage(msg);
+
+      // vibration on supported mobile devices
+      if (navigator.vibrate) {
+        navigator.vibrate(40);
+      }
+    }, 500);
+  };
+
+  /*
+|--------------------------------------------------------------------------
+| TOUCH MOVE
+|--------------------------------------------------------------------------
+*/
+
+  const handleMessageTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) {
+      return;
+    }
+
+    const touch = e.touches[0];
+
+    const deltaX = touch.clientX - touchStartXRef.current;
+    const deltaY = touch.clientY - touchStartYRef.current;
+
+    /*
+     * If user moves vertically/horizontally,
+     * cancel long press.
+     */
+
+    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
+
+    /*
+     * Swipe right to reply
+     */
+
+    if (deltaX > 70 && Math.abs(deltaY) < 50) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+
+      if (touchStartXRef.current !== null) {
+        touchStartXRef.current = null;
+      }
+
+      return;
+    }
+  };
+
+  /*
+|--------------------------------------------------------------------------
+| TOUCH END
+|--------------------------------------------------------------------------
+*/
+
+  const handleMessageTouchEnd = (e: React.TouchEvent, msg: Message) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    if (touchStartXRef.current === null || touchStartYRef.current === null) {
+      return;
+    }
+
+    const touch = e.changedTouches[0];
+
+    const deltaX = touch.clientX - touchStartXRef.current;
+    const deltaY = touch.clientY - touchStartYRef.current;
+
+    /*
+     * Swipe right
+     */
+
+    if (deltaX > 70 && Math.abs(deltaY) < 50 && !isLongPressRef.current) {
+      handleReply(msg);
+    }
+
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+  };
+
+  /*
+|--------------------------------------------------------------------------
+| TOUCH CANCEL
+|--------------------------------------------------------------------------
+*/
+
+  const handleMessageTouchCancel = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+  };
+
+  /*
+|--------------------------------------------------------------------------
+| CANCEL REPLY
+|--------------------------------------------------------------------------
+*/
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+  };
 
   /*
   |--------------------------------------------------------------------------
@@ -439,20 +594,16 @@ export default function MessageScreen({
       receiverId: receiver._id,
       content: text,
       messageType: "text",
+
+      ...(replyingTo?._id
+        ? {
+            replyTo: replyingTo._id,
+          }
+        : {}),
     });
 
-    /*
-     * Don't manually add the message here.
-     *
-     * Backend will:
-     *
-     * 1. Save message
-     * 2. Emit new_message
-     * 3. Frontend receives new_message
-     * 4. addMessage()
-     */
-
     setMessage("");
+    setReplyingTo(null);
   };
 
   /*
@@ -504,10 +655,6 @@ export default function MessageScreen({
       clearTimeout(typingTimeoutRef.current);
     }
 
-    /*
-     * Stop typing after 1 second
-     */
-
     typingTimeoutRef.current = setTimeout(() => {
       socket.emit("stop_typing", {
         conversationId,
@@ -516,12 +663,6 @@ export default function MessageScreen({
       typingTimeoutRef.current = null;
     }, 1000);
   };
-
-  /*
-  |--------------------------------------------------------------------------
-  | OTHER PARTICIPANT
-  |--------------------------------------------------------------------------
-  */
 
   const getOtherParticipant = () => {
     if (!activeConversation?.participants?.length) {
@@ -537,12 +678,6 @@ export default function MessageScreen({
 
   const user = getOtherParticipant();
 
-  /*
-  |--------------------------------------------------------------------------
-  | FORMAT TIME
-  |--------------------------------------------------------------------------
-  */
-
   const formatTime = (date?: string) => {
     if (!date) return "";
 
@@ -551,12 +686,6 @@ export default function MessageScreen({
       minute: "2-digit",
     });
   };
-
-  /*
-  |--------------------------------------------------------------------------
-  | LOADING
-  |--------------------------------------------------------------------------
-  */
 
   if (!activeConversation) {
     return (
@@ -718,26 +847,147 @@ export default function MessageScreen({
             messages.map((msg) => {
               const isMe = String(msg.senderId) === String(currentUserId);
 
+              const replyTo = (
+                msg as Message & {
+                  replyTo?: Message | string | null;
+                }
+              ).replyTo;
+
+              const replyMessage =
+                typeof replyTo === "object" && replyTo ? replyTo : null;
+
               return (
                 <div
                   key={msg._id}
-                  className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                  className={`relative flex ${
+                    isMe ? "justify-end" : "justify-start"
+                  }`}
                 >
+                  {/* MESSAGE ACTION MENU */}
+
+                  {selectedMessage?._id === msg._id && (
+                    <div
+                      className={`absolute bottom-full z-20 mb-2 flex items-center gap-1 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-xl ${
+                        isMe ? "right-0" : "left-0"
+                      }`}
+                    >
+                      {/* REPLY */}
+
+                      <button
+                        type="button"
+                        onClick={() => handleReply(msg)}
+                        className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+                      >
+                        <Reply size={15} />
+
+                        <span>Reply</span>
+                      </button>
+
+                      {/* EDIT */}
+
+                      {isMe && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            console.log("Edit message:", msg._id);
+
+                            setSelectedMessage(null);
+                          }}
+                          className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+                        >
+                          <Pencil size={14} />
+
+                          <span>Edit</span>
+                        </button>
+                      )}
+
+                      {/* DELETE */}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          console.log("Delete message:", msg._id);
+
+                          setSelectedMessage(null);
+                        }}
+                        className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                      >
+                        <Trash2 size={14} />
+
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* MESSAGE */}
+
                   <div
+                    onTouchStart={(e) => handleMessageTouchStart(e, msg)}
+                    onTouchMove={handleMessageTouchMove}
+                    onTouchEnd={(e) => handleMessageTouchEnd(e, msg)}
+                    onTouchCancel={handleMessageTouchCancel}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setSelectedMessage(msg);
+                    }}
                     className={`
-                      max-w-[80%]
-                      sm:max-w-[65%]
-                      px-4 py-3
-                      ${
-                        isMe
-                          ? "rounded-2xl rounded-br-md bg-zinc-950 text-white"
-                          : "rounded-2xl rounded-bl-md border border-zinc-200 bg-white text-zinc-900"
-                      }
-                    `}
+          max-w-[80%]
+          sm:max-w-[65%]
+          px-4 py-3
+          select-none
+          touch-pan-y
+          transition
+          ${
+            selectedMessage?._id === msg._id
+              ? "ring-2 ring-zinc-400 ring-offset-2"
+              : ""
+          }
+          ${
+            isMe
+              ? "rounded-2xl rounded-br-md bg-zinc-950 text-white"
+              : "rounded-2xl rounded-bl-md border border-zinc-200 bg-white text-zinc-900"
+          }
+        `}
                   >
+                    {/* REPLIED MESSAGE */}
+
+                    {replyMessage && (
+                      <div
+                        className={`mb-2 rounded-lg border-l-2 px-3 py-2 ${
+                          isMe
+                            ? "border-zinc-400 bg-zinc-800"
+                            : "border-zinc-950 bg-zinc-50"
+                        }`}
+                      >
+                        <p
+                          className={`text-[10px] font-semibold ${
+                            isMe ? "text-zinc-300" : "text-zinc-600"
+                          }`}
+                        >
+                          Replied message
+                        </p>
+
+                        <p
+                          className={`mt-0.5 line-clamp-2 text-xs ${
+                            isMe ? "text-zinc-300" : "text-zinc-500"
+                          }`}
+                        >
+                          {replyMessage.content}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* MESSAGE TEXT */}
+
                     <p className="text-sm leading-5">{msg.content}</p>
 
-                    <div className="mt-1.5 text-[10px] text-zinc-400">
+                    {/* TIME */}
+
+                    <div
+                      className={`mt-1.5 text-[10px] ${
+                        isMe ? "text-zinc-400" : "text-zinc-400"
+                      }`}
+                    >
                       {formatTime(msg.createdAt)}
                     </div>
                   </div>
@@ -776,6 +1026,32 @@ export default function MessageScreen({
           >
             <Paperclip size={19} />
           </button>
+
+          {replyingTo && (
+            <div className="mx-auto mb-2 flex max-w-3xl items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100">
+                <Reply size={15} className="text-zinc-600" />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Replying to message
+                </p>
+
+                <p className="mt-0.5 truncate text-xs text-zinc-700">
+                  {replyingTo.content}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={cancelReply}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
 
           {/* INPUT */}
 

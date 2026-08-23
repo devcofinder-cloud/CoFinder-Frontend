@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowLeft,
   Camera,
   Check,
   Globe,
-
   Loader2,
   Save,
   User,
@@ -18,9 +17,18 @@ import { authStore } from "@/app/store/authStore";
 
 export default function EditProfilePage() {
   const router = useRouter();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { user, loading, fetchProfile } = authStore();
+  const {
+    user,
+    loading,
+    fetchProfile,
+    updateProfile,
+    updateProfessionalProfile,
+    updatingProfile,
+    updatingProfessionalProfile,
+  } = authStore();
 
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -37,6 +45,7 @@ export default function EditProfilePage() {
   });
 
   const [profilePreview, setProfilePreview] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   /* -------------------------------------------------------------- */
   /* Fetch Profile                                                   */
@@ -57,11 +66,11 @@ export default function EditProfilePage() {
       name: user.name || "",
       email: user.email || "",
       role: user.role || "",
-      bio: user.email || "",
-      website: user.email || "",
-      github: user.email || "",
-      linkedin: user.email || "",
-      twitter: user.email || "",
+      bio: "",
+      website: "",
+      github: "",
+      linkedin: "",
+      twitter: "",
     });
 
     setProfilePreview(user.profileImage || "");
@@ -74,7 +83,7 @@ export default function EditProfilePage() {
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
     const { name, value } = e.target;
 
@@ -91,7 +100,7 @@ export default function EditProfilePage() {
   /* -------------------------------------------------------------- */
 
   const handleImageChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0];
 
@@ -100,6 +109,8 @@ export default function EditProfilePage() {
     if (!file.type.startsWith("image/")) {
       return;
     }
+
+    setSelectedImage(file);
 
     const reader = new FileReader();
 
@@ -121,19 +132,44 @@ export default function EditProfilePage() {
 
     try {
       setIsSaving(true);
+      setSaved(false);
 
-      /*
-       * Yahan apni update profile API call lagani hai.
-       *
-       * Example:
-       *
-       * await updateProfile(formData);
-       *
-       * Agar image bhi backend pe upload karni hai
-       * to FormData use karna.
-       */
+      /* ---------------------------------------------------------- */
+      /* 1. Update Basic User Profile                              */
+      /* ---------------------------------------------------------- */
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const profilePayload: {
+        name?: string;
+        profileImage?: File;
+      } = {
+        name: formData.name,
+      };
+
+      if (selectedImage) {
+        profilePayload.profileImage = selectedImage;
+      }
+
+      await updateProfile(profilePayload);
+
+      /* ---------------------------------------------------------- */
+      /* 2. Update Professional Profile                            */
+      /* ---------------------------------------------------------- */
+
+      await updateProfessionalProfile({
+        currentRole: formData.role,
+        about: formData.bio,
+
+        socialLinks: {
+          portfolio: formData.website,
+          github: formData.github,
+          linkedin: formData.linkedin,
+          twitter: formData.twitter,
+        },
+      });
+
+      /* ---------------------------------------------------------- */
+      /* Success                                                     */
+      /* ---------------------------------------------------------- */
 
       setSaved(true);
 
@@ -141,7 +177,10 @@ export default function EditProfilePage() {
         router.push("/profile");
       }, 800);
     } catch (error) {
-      console.error("Failed to update profile:", error);
+      console.error(
+        "Failed to update profile:",
+        error
+      );
     } finally {
       setIsSaving(false);
     }
@@ -217,6 +256,7 @@ export default function EditProfilePage() {
             >
               <div className="flex flex-col items-center">
                 {/* Avatar */}
+
                 <div className="relative">
                   <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border border-black/10 bg-neutral-100 text-4xl">
                     {profilePreview ? (
@@ -235,9 +275,12 @@ export default function EditProfilePage() {
                   </div>
 
                   {/* Camera */}
+
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() =>
+                      fileInputRef.current?.click()
+                    }
                     className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-full border-4 border-white bg-black text-white shadow-lg transition hover:scale-105"
                   >
                     <Camera className="h-4 w-4" />
@@ -261,6 +304,7 @@ export default function EditProfilePage() {
                 </p>
 
                 {/* Completion */}
+
                 <div className="mt-6 w-full rounded-2xl bg-neutral-100 p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-neutral-600">
@@ -330,6 +374,7 @@ export default function EditProfilePage() {
 
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   {/* Name */}
+
                   <InputField
                     label="Full Name"
                     name="name"
@@ -339,6 +384,7 @@ export default function EditProfilePage() {
                   />
 
                   {/* Email */}
+
                   <InputField
                     label="Email"
                     name="email"
@@ -349,6 +395,7 @@ export default function EditProfilePage() {
                   />
 
                   {/* Role */}
+
                   <div className="sm:col-span-2">
                     <label className="mb-2 block text-xs font-bold text-neutral-700">
                       Role
@@ -360,21 +407,46 @@ export default function EditProfilePage() {
                       onChange={handleChange}
                       className="w-full rounded-2xl border border-black/10 bg-neutral-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-black focus:bg-white"
                     >
-                      <option value="">Select your role</option>
-                      <option value="Founder">Founder</option>
-                      <option value="Co-Founder">Co-Founder</option>
-                      <option value="Developer">Developer</option>
-                      <option value="Designer">Designer</option>
+                      <option value="">
+                        Select your role
+                      </option>
+
+                      <option value="Founder">
+                        Founder
+                      </option>
+
+                      <option value="Co-Founder">
+                        Co-Founder
+                      </option>
+
+                      <option value="Developer">
+                        Developer
+                      </option>
+
+                      <option value="Designer">
+                        Designer
+                      </option>
+
                       <option value="Product Manager">
                         Product Manager
                       </option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="Sales">Sales</option>
-                      <option value="Other">Other</option>
+
+                      <option value="Marketing">
+                        Marketing
+                      </option>
+
+                      <option value="Sales">
+                        Sales
+                      </option>
+
+                      <option value="Other">
+                        Other
+                      </option>
                     </select>
                   </div>
 
                   {/* Bio */}
+
                   <div className="sm:col-span-2">
                     <label className="mb-2 block text-xs font-bold text-neutral-700">
                       About Me
@@ -429,6 +501,7 @@ export default function EditProfilePage() {
 
                 <div className="space-y-4">
                   {/* Website */}
+
                   <SocialInput
                     icon={<Globe className="h-4 w-4" />}
                     label="Website"
@@ -439,6 +512,7 @@ export default function EditProfilePage() {
                   />
 
                   {/* Github */}
+
                   <SocialInput
                     icon={<Globe className="h-4 w-4" />}
                     label="GitHub"
@@ -449,6 +523,7 @@ export default function EditProfilePage() {
                   />
 
                   {/* Linkedin */}
+
                   <SocialInput
                     icon={<Globe className="h-4 w-4" />}
                     label="LinkedIn"
@@ -459,6 +534,7 @@ export default function EditProfilePage() {
                   />
 
                   {/* Twitter */}
+
                   <SocialInput
                     icon={<Globe className="h-4 w-4" />}
                     label="X / Twitter"
@@ -486,7 +562,11 @@ export default function EditProfilePage() {
 
                   <button
                     type="submit"
-                    disabled={isSaving}
+                    disabled={
+                      isSaving ||
+                      updatingProfile ||
+                      updatingProfessionalProfile
+                    }
                     className="flex items-center justify-center gap-2 rounded-full bg-black px-7 py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isSaving ? (
@@ -534,7 +614,7 @@ function InputField({
   onChange: (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => void;
   placeholder?: string;
   type?: string;
@@ -576,7 +656,7 @@ function SocialInput({
   onChange: (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => void;
   placeholder?: string;
 }) {

@@ -26,7 +26,12 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-
+import {
+  FaDiscord,
+  FaGithub,
+  FaLinkedin,
+  FaTwitter
+} from 'react-icons/fa'
 import { authStore } from "@/app/store/authStore";
 import { useRouter } from "next/navigation";
 
@@ -111,10 +116,10 @@ const initialIdeas = [
 ];
 
 const links = [
-  { icon: Globe, label: "X", href: "#" },
-  { icon: Globe, label: "GitHub", href: "#" },
-  { icon: Globe, label: "LinkedIn", href: "#" },
-  { icon: Globe, label: "Website", href: "#" },
+  { icon: FaTwitter, label: "X", href: "#" },
+  { icon: FaGithub, label: "GitHub", href: "#" },
+  { icon: FaLinkedin, label: "LinkedIn", href: "#" },
+  { icon: FaDiscord, label: "Website", href: "#" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -139,32 +144,21 @@ export default function ProfilePage() {
 
   const appRouter = useRouter();
 
-  /* -------------------------------------------------------------- */
-  /* Auth Store                                                      */
-  /* -------------------------------------------------------------- */
+ 
 
   const { user, loading, fetchProfile } = authStore();
 
-  /* -------------------------------------------------------------- */
-  /* Fetch Profile                                                   */
-  /* -------------------------------------------------------------- */
+
 
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+  }, []);
 
-  /* -------------------------------------------------------------- */
-  /* Edit Profile                                                    */
-  /* -------------------------------------------------------------- */
 
   const handleEditProfile = () => {
     setIsEditMenuOpen(false);
     appRouter.push("/profile/edit");
   };
-
-  /* -------------------------------------------------------------- */
-  /* Like                                                            */
-  /* -------------------------------------------------------------- */
 
   const toggleLike = (id: string) => {
     setLikedIdeas((prev) => ({
