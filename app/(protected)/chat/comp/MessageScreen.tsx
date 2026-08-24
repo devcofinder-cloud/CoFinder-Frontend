@@ -39,6 +39,8 @@ export default function MessageScreen({
     fetchMessages,
     setMessages,
     addMessage,
+    editExistingMessage,
+    deleteExistingMessage
   } = useChatStore();
 
   const [message, setMessage] = useState("");
@@ -46,6 +48,11 @@ export default function MessageScreen({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+
+  const [editModal, setEditModal] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [editText, setEditText] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
 
@@ -157,17 +164,6 @@ export default function MessageScreen({
       console.error("JWT token not found. Socket cannot connect.");
       return;
     }
-
-    /*
-     * Create socket connection.
-     *
-     * IMPORTANT:
-     * Backend expects:
-     *
-     * socket.handshake.auth.token
-     *
-     * Therefore token MUST be inside auth.
-     */
 
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
@@ -329,11 +325,63 @@ export default function MessageScreen({
       },
     );
 
+/*
+|--------------------------------------------------------------------------
+| MESSAGE EDITED
+|--------------------------------------------------------------------------
+*/
+
+socket.on("message_edited", (updatedMessage) => {
+  console.log("✏️ MESSAGE EDITED:", updatedMessage);
+
+  const incomingConversationId =
+    updatedMessage.conversationId ||
+    updatedMessage.conversation?._id ||
+    updatedMessage.conversation;
+
+  if (!incomingConversationId) {
+    console.error("❌ Conversation ID missing in edited message");
+    return;
+  }
+
+  if (
+    String(incomingConversationId) !== String(conversationId)
+  ) {
+    console.log("❌ Edited message belongs to another conversation");
+    return;
+  }
+
+  const messageId = updatedMessage._id;
+
+  if (!messageId) {
+    console.error("❌ Edited message ID missing");
+    return;
+  }
+
+  const content = updatedMessage.content;
+
+  if (typeof content !== "string") {
+    console.error("❌ Edited message content missing");
+    return;
+  }
+
+  console.log("✅ MESSAGE EDITED:", {
+    messageId,
+    content,
+  });
+
+  editExistingMessage(
+    String(messageId),
+    content,
+  );
+});
+
     /*
     |--------------------------------------------------------------------------
     | MESSAGE ERROR
     |--------------------------------------------------------------------------
     */
+
 
     socket.on(
       "message_error",
@@ -344,6 +392,8 @@ export default function MessageScreen({
         );
       },
     );
+
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -386,6 +436,71 @@ export default function MessageScreen({
     setReplyingTo(msg);
     setSelectedMessage(null);
   };
+
+  const handleEdit = (msg: Message) => {
+    if (String(msg.senderId) !== String(currentUserId)) {
+      return;
+    }
+
+    if (msg.messageType !== "text") {
+      return;
+    }
+
+    if (msg.isDeleted) {
+      return;
+    }
+
+    setEditingMessage(msg);
+    setEditText(msg.content || "");
+    setSelectedMessage(null);
+    setEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    if (isEditing) return;
+
+    setEditModal(false);
+    setEditingMessage(null);
+    setEditText("");
+  };
+
+const handleSaveEdit = async () => {
+  const text = editText.trim();
+
+  if (!text) return;
+
+  if (!editingMessage?._id) return;
+
+  if (text === editingMessage.content) {
+    closeEditModal();
+    return;
+  }
+
+  try {
+    setIsEditing(true);
+
+    const updatedMessage = await editExistingMessage(
+      editingMessage._id,
+      text,
+    );
+
+    if (!updatedMessage) {
+      console.error("❌ Message edit failed");
+      return;
+    }
+
+    console.log("✅ Message edited successfully:", updatedMessage);
+
+    closeEditModal();
+  } catch (error) {
+    console.error("❌ Failed to edit message:", error);
+  } finally {
+    setIsEditing(false);
+  }
+};
+
+
+
 
   /*
 |--------------------------------------------------------------------------
@@ -885,14 +1000,10 @@ export default function MessageScreen({
 
                       {/* EDIT */}
 
-                      {isMe && (
+                      {isMe && msg.messageType === "text" && !msg.isDeleted && (
                         <button
                           type="button"
-                          onClick={() => {
-                            console.log("Edit message:", msg._id);
-
-                            setSelectedMessage(null);
-                          }}
+                          onClick={() => handleEdit(msg)}
                           className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
                         >
                           <Pencil size={14} />
@@ -906,9 +1017,7 @@ export default function MessageScreen({
                       <button
                         type="button"
                         onClick={() => {
-                          console.log("Delete message:", msg._id);
-
-                          setSelectedMessage(null);
+                          deleteExistingMessage(msg._id);setSelectedMessage(null);
                         }}
                         className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-red-600 transition hover:bg-red-50"
                       >
@@ -979,7 +1088,15 @@ export default function MessageScreen({
 
                     {/* MESSAGE TEXT */}
 
-                    <p className="text-sm leading-5">{msg.content}</p>
+                    <p className="text-sm leading-5">
+                      {msg.content}
+
+                      {msg.isEdited && !msg.isDeleted && (
+                        <span className="ml-1.5 text-[10px] text-zinc-400">
+                          (edited)
+                        </span>
+                      )}
+                    </p>
 
                     {/* TIME */}
 
@@ -1017,6 +1134,32 @@ export default function MessageScreen({
       {/* INPUT */}
 
       <div className="mb-20 border-t border-zinc-200 bg-white p-3 sm:mb-12 sm:p-4">
+        {replyingTo && (
+          <div className="mx-auto mb-2 flex max-w-3xl items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100">
+              <Reply size={15} className="text-zinc-600" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                Replying to message
+              </p>
+
+              <p className="mt-0.5 truncate text-xs text-zinc-700">
+                {replyingTo.content}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={cancelReply}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-2 focus-within:border-zinc-400 focus-within:bg-white">
           {/* ATTACHMENT */}
 
@@ -1026,32 +1169,6 @@ export default function MessageScreen({
           >
             <Paperclip size={19} />
           </button>
-
-          {replyingTo && (
-            <div className="mx-auto mb-2 flex max-w-3xl items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100">
-                <Reply size={15} className="text-zinc-600" />
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                  Replying to message
-                </p>
-
-                <p className="mt-0.5 truncate text-xs text-zinc-700">
-                  {replyingTo.content}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={cancelReply}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          )}
 
           {/* INPUT */}
 
@@ -1094,6 +1211,109 @@ export default function MessageScreen({
           Press Enter to send
         </p>
       </div>
+      {editModal && editingMessage && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget && !isEditing) {
+              closeEditModal();
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {/* HEADER */}
+
+            <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
+              <div>
+                <h3 className="text-base font-bold text-zinc-950">
+                  Edit message
+                </h3>
+
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  Update your message
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeEditModal}
+                disabled={isEditing}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            {/* BODY */}
+
+            <div className="p-5">
+              <textarea
+                autoFocus
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                disabled={isEditing}
+                rows={4}
+                maxLength={5000}
+                placeholder="Edit your message..."
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    closeEditModal();
+                  }
+
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSaveEdit();
+                  }
+                }}
+                className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-3 text-sm leading-5 text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              />
+
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-[10px] text-zinc-400">
+                  Press Enter to save
+                </span>
+
+                <span className="text-[10px] text-zinc-400">
+                  {editText.length}/5000
+                </span>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+
+            <div className="flex items-center justify-end gap-2 border-t border-zinc-100 bg-zinc-50 px-5 py-3">
+              <button
+                type="button"
+                onClick={closeEditModal}
+                disabled={isEditing}
+                className="rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                disabled={
+                  isEditing ||
+                  !editText.trim() ||
+                  editText.trim() === editingMessage.content
+                }
+                className="flex min-w-[110px] items-center justify-center rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isEditing ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white" />
+                ) : (
+                  "Save changes"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

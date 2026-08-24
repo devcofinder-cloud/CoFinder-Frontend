@@ -21,6 +21,9 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const userId = user._id || user.id;
 
   useEffect(() => {
     const loadConversations = async () => {
@@ -186,13 +189,8 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
                     />
                   ) : (
                     <div
-                      className="
-                        flex h-12 w-12
-                        items-center justify-center
-                        rounded-full bg-zinc-900
-                        text-sm font-semibold
-                        text-white
-                      "
+                      className=" flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900
+                        text-sm font-semibold text-white "
                     >
                       {user?.name?.slice(0, 2).toUpperCase() || "U"}
                     </div>
@@ -225,15 +223,23 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
                     </div>
                   </div>
 
-                  {/* <p
+                  <p
                     className="
                       mt-1 truncate text-xs
                       text-zinc-500
                     "
                   >
-                    {chat.lastMessage ||
-                      "No messages yet"}
-                  </p> */}
+                    <span className="font-semibold mr-4">
+                      {typeof chat?.lastMessage !== "string" &&
+                      String(chat?.lastMessage?.sender) === String(userId)
+                        ? "You :"
+                        : ""}
+                    </span>
+
+                    {typeof chat?.lastMessage !== "string"
+                      ? chat?.lastMessage?.content
+                      : ""}
+                  </p>
                 </div>
               </button>
             );

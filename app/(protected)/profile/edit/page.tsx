@@ -14,11 +14,45 @@ import {
 import { useRouter } from "next/navigation";
 
 import { authStore } from "@/app/store/authStore";
+import avatar1 from '@/public/avatars/peep-15.png';
+import avatar2 from '@/public/avatars/peep-22.png';
+import avatar3 from '@/public/avatars/peep-29.png';
+import avatar4 from '@/public/avatars/peep-43.png';
+import avatar5 from '@/public/avatars/peep-52.png';
+import avatar6 from '@/public/avatars/peep-8.png';
+import avatar7 from '@/public/avatars/peep-96.png';
+import avatar8 from '@/public/avatars/peep-99 (1).png';
+import avatar9 from '@/public/avatars/peep-99.png';
 
 export default function EditProfilePage() {
   const router = useRouter();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [imageType, setImageType] = useState<String>("image");
+  const [avatarModal, setAvatarModal] = useState<Boolean>(false)
+
+  const handleAvatar =()=>{
+    try {
+      setImageType("avatar")
+      setAvatarModal(true)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  const avatar_array = [
+    avatar1,
+    avatar2,
+    avatar3,
+    avatar4,
+    avatar5,
+    avatar6,
+    avatar7,
+    avatar8,
+    avatar9,
+  ]
+
 
   const {
     user,
@@ -47,17 +81,12 @@ export default function EditProfilePage() {
   const [profilePreview, setProfilePreview] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
-  /* -------------------------------------------------------------- */
-  /* Fetch Profile                                                   */
-  /* -------------------------------------------------------------- */
 
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
 
-  /* -------------------------------------------------------------- */
   /* Fill Form                                                       */
-  /* -------------------------------------------------------------- */
 
   useEffect(() => {
     if (!user) return;
@@ -95,9 +124,7 @@ export default function EditProfilePage() {
     setSaved(false);
   };
 
-  /* -------------------------------------------------------------- */
   /* Profile Image                                                   */
-  /* -------------------------------------------------------------- */
 
   const handleImageChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -123,9 +150,6 @@ export default function EditProfilePage() {
     setSaved(false);
   };
 
-  /* -------------------------------------------------------------- */
-  /* Save Profile                                                    */
-  /* -------------------------------------------------------------- */
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,10 +158,7 @@ export default function EditProfilePage() {
       setIsSaving(true);
       setSaved(false);
 
-      /* ---------------------------------------------------------- */
-      /* 1. Update Basic User Profile                              */
-      /* ---------------------------------------------------------- */
-
+    
       const profilePayload: {
         name?: string;
         profileImage?: File;
@@ -151,9 +172,7 @@ export default function EditProfilePage() {
 
       await updateProfile(profilePayload);
 
-      /* ---------------------------------------------------------- */
-      /* 2. Update Professional Profile                            */
-      /* ---------------------------------------------------------- */
+   
 
       await updateProfessionalProfile({
         currentRole: formData.role,
@@ -167,9 +186,6 @@ export default function EditProfilePage() {
         },
       });
 
-      /* ---------------------------------------------------------- */
-      /* Success                                                     */
-      /* ---------------------------------------------------------- */
 
       setSaved(true);
 
@@ -294,6 +310,10 @@ export default function EditProfilePage() {
                     className="hidden"
                   />
                 </div>
+
+
+                <p className="text-gray-600 font-semibold pt-4">Or</p>
+                <button className="text-white bg-black px-3 py-1.3 rounded-full font-semibold">Choose Avatar</button>
 
                 <h2 className="mt-5 text-lg font-bold">
                   {formData.name || "Your Name"}
