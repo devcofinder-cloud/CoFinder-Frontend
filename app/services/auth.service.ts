@@ -18,6 +18,8 @@ export interface RegisterPayload {
   gender: string;
 }
 
+
+
 export interface UpdatePayload {
   name?: string;
   username?: string;
@@ -25,7 +27,9 @@ export interface UpdatePayload {
   location?: string;
   age?: number;
   gender?: string;
-  profileImage?: File;
+
+  profileImage?: File | string;
+  profileImageType?: "avatar" | "image";
 }
 
 export interface UpdateProfessionalProfilePayload {

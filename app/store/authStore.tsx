@@ -27,14 +27,27 @@ interface User {
   provider: string;
 
   profileImage: string | null;
+  profileImageType?: "avatar" | "image";
 
   completionStatus: number;
+
+  // Professional profile
+  about?: string;
+  bio?: string;
+
+  socialLinks?: {
+    portfolio?: string;
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+  };
 
   createdAt: string;
   updatedAt: string;
 
   __v: number;
 }
+
 
 interface UpdateProfilePayload {
   name?: string;
@@ -43,7 +56,9 @@ interface UpdateProfilePayload {
   location?: string;
   age?: number;
   gender?: string;
-  profileImage?: File;
+
+  profileImage?: File | string;
+  profileImageType?: "avatar" | "image";
 }
 
 interface UserStore {
@@ -81,11 +96,15 @@ export const authStore = create<UserStore>()(
 
       fetchProfile: async () => {
         try {
-          set({ loading: true });
+          set({
+            loading: true,
+          });
 
           const response = await getProfile();
 
-          const user = response.data;
+          const user =
+            response.data?.data ||
+            response.data;
 
           set({
             user,
@@ -121,9 +140,12 @@ export const authStore = create<UserStore>()(
               updatingProfile: false,
             });
           } else {
-            const profileResponse = await getProfile();
+            const profileResponse =
+              await getProfile();
 
-            const user = profileResponse.data.data;
+            const user =
+              profileResponse.data?.data ||
+              profileResponse.data;
 
             set({
               user,
@@ -144,7 +166,9 @@ export const authStore = create<UserStore>()(
         }
       },
 
-      updateProfessionalProfile: async (data) => {
+      updateProfessionalProfile: async (
+        data
+      ) => {
         try {
           set({
             updatingProfessionalProfile: true,
