@@ -6,27 +6,51 @@ import api from "../lib/axios";
 |--------------------------------------------------------------------------
 */
 
+export interface MessageAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 export interface Message {
   _id: string;
-  conversation?: string;
-  conversationId: string;
-  sender?: string;
+
+  conversationId?: string;
+  conversation?: string | {
+    _id: string;
+  };
+
   senderId: string;
-  receiver?: string;
   receiverId?: string;
+
+  sender?: {
+    _id: string;
+    name: string;
+    email?: string;
+    profileImage?: string | null;
+    avatar?: string | null;
+  };
+
+  receiver?: {
+    _id: string;
+    name: string;
+    email?: string;
+    profileImage?: string | null;
+    avatar?: string | null;
+  };
+
   content: string;
-  messageType: string;
+  messageType: "text" | "image" | "video" | "file";
+
+  attachment?: MessageAttachment | null;
 
   replyTo?: Message | string | null;
 
-  isRead?: boolean;
-  readAt?: string | null;
-
   isEdited?: boolean;
-  editedAt?: string | null;
-
   isDeleted?: boolean;
   deletedAt?: string | null;
+  seenAt?: string | null;
 
   createdAt: string;
   updatedAt?: string;
@@ -76,13 +100,35 @@ export interface UnreadCountResponse {
 export const sendMessage = (data: {
   conversationId: string;
   receiverId: string;
-  content: string;
-  messageType?: string;
+  content?: string;
+  messageType?: "text" | "image" | "video" | "file";
   replyTo?: string;
+  attachment?: File | null;
 }) => {
-  return api.post("/messages/send", data);
-};
+  const formData = new FormData();
 
+  formData.append("conversationId", data.conversationId);
+  formData.append("receiverId", data.receiverId);
+
+  formData.append(
+    "messageType",
+    data.messageType || "text"
+  );
+
+  if (data.content?.trim()) {
+    formData.append("content", data.content.trim());
+  }
+
+  if (data.replyTo) {
+    formData.append("replyTo", data.replyTo);
+  }
+
+  if (data.attachment) {
+    formData.append("attachment", data.attachment);
+  }
+
+  return api.post("/messages/send", formData);
+};
 /*
 |--------------------------------------------------------------------------
 | GET MESSAGES

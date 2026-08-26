@@ -15,6 +15,7 @@ import {
   Pencil,
   Trash2,
   Reply,
+  FileText,
 } from "lucide-react";
 
 import { Message } from "@/app/services/chat.service";
@@ -40,7 +41,8 @@ export default function MessageScreen({
     setMessages,
     addMessage,
     editExistingMessage,
-    deleteExistingMessage
+    deleteExistingMessage,
+    sendNewMessage,
   } = useChatStore();
 
   const [message, setMessage] = useState("");
@@ -56,26 +58,19 @@ export default function MessageScreen({
 
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSendingFile, setIsSendingFile] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const touchStartXRef = useRef<number | null>(null);
-
   const touchStartYRef = useRef<number | null>(null);
-
   const isLongPressRef = useRef(false);
-
   const socketRef = useRef<Socket | null>(null);
-
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
-  /*
-  |--------------------------------------------------------------------------
-  | CURRENT USER
-  |--------------------------------------------------------------------------
-  */
-
+  // Load current user from localStorage
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -95,12 +90,7 @@ export default function MessageScreen({
     }
   }, []);
 
-  /*
-  |--------------------------------------------------------------------------
-  | LOAD CONVERSATION + MESSAGES
-  |--------------------------------------------------------------------------
-  */
-
+  // Load conversation + messages
   useEffect(() => {
     if (!conversationId) return;
 
@@ -128,12 +118,7 @@ export default function MessageScreen({
     };
   }, [conversationId, fetchConversation, fetchMessages, setMessages]);
 
-  /*
-  |--------------------------------------------------------------------------
-  | AUTO SCROLL
-  |--------------------------------------------------------------------------
-  */
-
+  // Auto scroll to bottom on new messages / typing indicator
   useEffect(() => {
     const container = messagesContainerRef.current;
 
@@ -142,12 +127,7 @@ export default function MessageScreen({
     container.scrollTop = container.scrollHeight;
   }, [messages, typing]);
 
-  /*
-  |--------------------------------------------------------------------------
-  | SOCKET CONNECTION
-  |--------------------------------------------------------------------------
-  */
-
+  // Socket connection lifecycle
   useEffect(() => {
     if (!conversationId || !currentUserId) {
       return;
@@ -167,82 +147,40 @@ export default function MessageScreen({
 
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-
-      auth: {
-        token,
-      },
+      auth: { token },
     });
 
     socketRef.current = socket;
 
-    /*
-    |--------------------------------------------------------------------------
-    | CONNECT
-    |--------------------------------------------------------------------------
-    */
-
     socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
-
       setSocketConnected(true);
-
-      /*
-       * Join current conversation room
-       */
-
-      socket.emit("join_conversation", {
-        conversationId,
-      });
+      socket.emit("join_conversation", { conversationId });
     });
-
-    /*
-    |--------------------------------------------------------------------------
-    | CONNECT ERROR
-    |--------------------------------------------------------------------------
-    */
 
     socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error.message);
-
       setSocketConnected(false);
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | DISCONNECT
-    |--------------------------------------------------------------------------
-    */
-
-    socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-
+    socket.on("disconnect", () => {
       setSocketConnected(false);
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | NEW MESSAGE
-    |--------------------------------------------------------------------------
-    */
     socket.on("new_message", (newMessage) => {
-      console.log("🔥 NEW MESSAGE RECEIVED:", newMessage);
-
+      console.log("🔥 SOCKET MESSAGE:", newMessage);
+  console.log("📎 ATTACHMENT:", newMessage.attachment);
+  console.log("📦 MESSAGE TYPE:", newMessage.messageType);
       const incomingConversationId =
         newMessage.conversationId ||
         newMessage.conversation?._id ||
         newMessage.conversation;
 
-      console.log("📌 Current conversation:", conversationId);
-
-      console.log("📌 Incoming conversation:", incomingConversationId);
-
       if (!incomingConversationId) {
-        console.error("❌ Conversation ID missing from socket message");
+        console.error("Conversation ID missing from socket message");
         return;
       }
 
       if (String(incomingConversationId) !== String(conversationId)) {
-        console.log("❌ Different conversation");
         return;
       }
 
@@ -250,16 +188,11 @@ export default function MessageScreen({
 
       const normalizedMessage: Message = {
         ...newMessage,
-
         conversationId: String(incomingConversationId),
-
         senderId: String(senderId),
-
         receiverId:
           newMessage.receiverId || newMessage.receiver?._id || undefined,
       };
-
-      console.log("✅ ADDING REALTIME MESSAGE:", normalizedMessage);
 
       addMessage(normalizedMessage);
 
@@ -267,11 +200,6 @@ export default function MessageScreen({
         setTyping(false);
       }
     });
-    /*
-    |--------------------------------------------------------------------------
-    | USER TYPING
-    |--------------------------------------------------------------------------
-    */
 
     socket.on(
       "user_typing",
@@ -282,27 +210,12 @@ export default function MessageScreen({
         conversationId: string;
         userId?: string;
       }) => {
-        if (String(id) !== String(conversationId)) {
-          return;
-        }
-
-        /*
-         * Don't show own typing event.
-         */
-
-        if (userId && String(userId) === String(currentUserId)) {
-          return;
-        }
+        if (String(id) !== String(conversationId)) return;
+        if (userId && String(userId) === String(currentUserId)) return;
 
         setTyping(true);
       },
     );
-
-    /*
-    |--------------------------------------------------------------------------
-    | USER STOP TYPING
-    |--------------------------------------------------------------------------
-    */
 
     socket.on(
       "user_stop_typing",
@@ -313,75 +226,44 @@ export default function MessageScreen({
         conversationId: string;
         userId?: string;
       }) => {
-        if (String(id) !== String(conversationId)) {
-          return;
-        }
-
-        if (userId && String(userId) === String(currentUserId)) {
-          return;
-        }
+        if (String(id) !== String(conversationId)) return;
+        if (userId && String(userId) === String(currentUserId)) return;
 
         setTyping(false);
       },
     );
 
-/*
-|--------------------------------------------------------------------------
-| MESSAGE EDITED
-|--------------------------------------------------------------------------
-*/
+    socket.on("message_edited", (updatedMessage) => {
+      const incomingConversationId =
+        updatedMessage.conversationId ||
+        updatedMessage.conversation?._id ||
+        updatedMessage.conversation;
 
-socket.on("message_edited", (updatedMessage) => {
-  console.log("✏️ MESSAGE EDITED:", updatedMessage);
+      if (!incomingConversationId) {
+        console.error("Conversation ID missing in edited message");
+        return;
+      }
 
-  const incomingConversationId =
-    updatedMessage.conversationId ||
-    updatedMessage.conversation?._id ||
-    updatedMessage.conversation;
+      if (String(incomingConversationId) !== String(conversationId)) {
+        return;
+      }
 
-  if (!incomingConversationId) {
-    console.error("❌ Conversation ID missing in edited message");
-    return;
-  }
+      const messageId = updatedMessage._id;
 
-  if (
-    String(incomingConversationId) !== String(conversationId)
-  ) {
-    console.log("❌ Edited message belongs to another conversation");
-    return;
-  }
+      if (!messageId) {
+        console.error("Edited message ID missing");
+        return;
+      }
 
-  const messageId = updatedMessage._id;
+      const content = updatedMessage.content;
 
-  if (!messageId) {
-    console.error("❌ Edited message ID missing");
-    return;
-  }
+      if (typeof content !== "string") {
+        console.error("Edited message content missing");
+        return;
+      }
 
-  const content = updatedMessage.content;
-
-  if (typeof content !== "string") {
-    console.error("❌ Edited message content missing");
-    return;
-  }
-
-  console.log("✅ MESSAGE EDITED:", {
-    messageId,
-    content,
-  });
-
-  editExistingMessage(
-    String(messageId),
-    content,
-  );
-});
-
-    /*
-    |--------------------------------------------------------------------------
-    | MESSAGE ERROR
-    |--------------------------------------------------------------------------
-    */
-
+      editExistingMessage(String(messageId), content);
+    });
 
     socket.on(
       "message_error",
@@ -393,31 +275,16 @@ socket.on("message_edited", (updatedMessage) => {
       },
     );
 
-    
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLEANUP
-    |--------------------------------------------------------------------------
-    */
-
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
-
         typingTimeoutRef.current = null;
       }
 
-      socket.emit("stop_typing", {
-        conversationId,
-      });
-
-      socket.emit("leave_conversation", {
-        conversationId,
-      });
+      socket.emit("stop_typing", { conversationId });
+      socket.emit("leave_conversation", { conversationId });
 
       socket.removeAllListeners();
-
       socket.disconnect();
 
       socketRef.current = null;
@@ -425,12 +292,7 @@ socket.on("message_edited", (updatedMessage) => {
       setSocketConnected(false);
       setTyping(false);
     };
-  }, [conversationId, currentUserId, addMessage]);
-  /*
-|--------------------------------------------------------------------------
-| MESSAGE REPLY
-|--------------------------------------------------------------------------
-*/
+  }, [conversationId, currentUserId, addMessage, editExistingMessage]);
 
   const handleReply = (msg: Message) => {
     setReplyingTo(msg);
@@ -438,17 +300,9 @@ socket.on("message_edited", (updatedMessage) => {
   };
 
   const handleEdit = (msg: Message) => {
-    if (String(msg.senderId) !== String(currentUserId)) {
-      return;
-    }
-
-    if (msg.messageType !== "text") {
-      return;
-    }
-
-    if (msg.isDeleted) {
-      return;
-    }
+    if (String(msg.senderId) !== String(currentUserId)) return;
+    if (msg.messageType !== "text") return;
+    if (msg.isDeleted) return;
 
     setEditingMessage(msg);
     setEditText(msg.content || "");
@@ -464,74 +318,55 @@ socket.on("message_edited", (updatedMessage) => {
     setEditText("");
   };
 
-const handleSaveEdit = async () => {
-  const text = editText.trim();
+  const handleSaveEdit = async () => {
+    const text = editText.trim();
 
-  if (!text) return;
+    if (!text) return;
+    if (!editingMessage?._id) return;
 
-  if (!editingMessage?._id) return;
-
-  if (text === editingMessage.content) {
-    closeEditModal();
-    return;
-  }
-
-  try {
-    setIsEditing(true);
-
-    const updatedMessage = await editExistingMessage(
-      editingMessage._id,
-      text,
-    );
-
-    if (!updatedMessage) {
-      console.error("❌ Message edit failed");
+    if (text === editingMessage.content) {
+      closeEditModal();
       return;
     }
 
-    console.log("✅ Message edited successfully:", updatedMessage);
+    try {
+      setIsEditing(true);
 
-    closeEditModal();
-  } catch (error) {
-    console.error("❌ Failed to edit message:", error);
-  } finally {
-    setIsEditing(false);
-  }
-};
+      const updatedMessage = await editExistingMessage(
+        editingMessage._id,
+        text,
+      );
 
+      if (!updatedMessage) {
+        console.error("Message edit failed");
+        return;
+      }
 
+      closeEditModal();
+    } catch (error) {
+      console.error("Failed to edit message:", error);
+    } finally {
+      setIsEditing(false);
+    }
+  };
 
-
-  /*
-|--------------------------------------------------------------------------
-| LONG PRESS
-|--------------------------------------------------------------------------
-*/
-
+  // Long press to open the message action menu (mobile)
   const handleMessageTouchStart = (e: React.TouchEvent, msg: Message) => {
     const touch = e.touches[0];
 
     touchStartXRef.current = touch.clientX;
     touchStartYRef.current = touch.clientY;
-
     isLongPressRef.current = false;
 
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
       setSelectedMessage(msg);
 
-      // vibration on supported mobile devices
       if (navigator.vibrate) {
         navigator.vibrate(40);
       }
     }, 500);
   };
-
-  /*
-|--------------------------------------------------------------------------
-| TOUCH MOVE
-|--------------------------------------------------------------------------
-*/
 
   const handleMessageTouchMove = (e: React.TouchEvent) => {
     if (touchStartXRef.current === null || touchStartYRef.current === null) {
@@ -539,15 +374,10 @@ const handleSaveEdit = async () => {
     }
 
     const touch = e.touches[0];
-
     const deltaX = touch.clientX - touchStartXRef.current;
     const deltaY = touch.clientY - touchStartYRef.current;
 
-    /*
-     * If user moves vertically/horizontally,
-     * cancel long press.
-     */
-
+    // Cancel long press once the finger moves too far
     if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
@@ -555,29 +385,16 @@ const handleSaveEdit = async () => {
       }
     }
 
-    /*
-     * Swipe right to reply
-     */
-
+    // Swipe right to reply
     if (deltaX > 70 && Math.abs(deltaY) < 50) {
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
       }
 
-      if (touchStartXRef.current !== null) {
-        touchStartXRef.current = null;
-      }
-
-      return;
+      touchStartXRef.current = null;
     }
   };
-
-  /*
-|--------------------------------------------------------------------------
-| TOUCH END
-|--------------------------------------------------------------------------
-*/
 
   const handleMessageTouchEnd = (e: React.TouchEvent, msg: Message) => {
     if (longPressTimerRef.current) {
@@ -590,13 +407,8 @@ const handleSaveEdit = async () => {
     }
 
     const touch = e.changedTouches[0];
-
     const deltaX = touch.clientX - touchStartXRef.current;
     const deltaY = touch.clientY - touchStartYRef.current;
-
-    /*
-     * Swipe right
-     */
 
     if (deltaX > 70 && Math.abs(deltaY) < 50 && !isLongPressRef.current) {
       handleReply(msg);
@@ -605,12 +417,6 @@ const handleSaveEdit = async () => {
     touchStartXRef.current = null;
     touchStartYRef.current = null;
   };
-
-  /*
-|--------------------------------------------------------------------------
-| TOUCH CANCEL
-|--------------------------------------------------------------------------
-*/
 
   const handleMessageTouchCancel = () => {
     if (longPressTimerRef.current) {
@@ -622,27 +428,96 @@ const handleSaveEdit = async () => {
     touchStartYRef.current = null;
   };
 
-  /*
-|--------------------------------------------------------------------------
-| CANCEL REPLY
-|--------------------------------------------------------------------------
-*/
-
   const cancelReply = () => {
     setReplyingTo(null);
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | SEND MESSAGE
-  |--------------------------------------------------------------------------
-  */
+  const getReceiver = () => {
+    return activeConversation?.participants?.find(
+      (participant) => String(participant._id) !== String(currentUserId),
+    );
+  };
+
+  const getMessageType = (file: File) => {
+    if (file.type.startsWith("image/")) return "image";
+    if (file.type.startsWith("video/")) return "video";
+    return "file";
+  };
+
+  // Uploads the currently selected attachment
+  const sendAttachment = async (file: File) => {
+    if (!conversationId) {
+      console.error("Conversation ID missing");
+      return;
+    }
+
+    if (!currentUserId) {
+      console.error("Current user ID missing");
+      return;
+    }
+
+    const receiver = getReceiver();
+
+    if (!receiver?._id) {
+      console.error("Receiver not found");
+      return;
+    }
+
+    const socket = socketRef.current;
+
+    if (!socket || !socket.connected) {
+      console.error("Socket is not connected");
+      return;
+    }
+
+    try {
+      setIsSendingFile(true);
+
+      const arrayBuffer = await file.arrayBuffer();
+
+      const payload = {
+        conversationId: String(conversationId),
+        receiverId: String(receiver._id),
+        content: "",
+        messageType: getMessageType(file),
+
+        replyTo: replyingTo?._id ? String(replyingTo._id) : null,
+
+        attachment: {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+
+          // ArrayBuffer socket.io se transmit ho jayega
+          buffer: arrayBuffer,
+        },
+      };
+
+      socket.emit("sendMessage", payload);
+
+      setSelectedFile(null);
+      setReplyingTo(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error) {
+      console.error("Failed to send attachment:", error);
+    } finally {
+      setIsSendingFile(false);
+    }
+  };
 
   const handleSend = () => {
+    // Sending an attachment takes priority over the text field
+    if (selectedFile) {
+      sendAttachment(selectedFile);
+      return;
+    }
+
     const text = message.trim();
 
     if (!text) return;
-
     if (!conversationId) {
       console.error("Conversation ID missing");
       return;
@@ -665,124 +540,68 @@ const handleSaveEdit = async () => {
       return;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | FIND RECEIVER
-    |--------------------------------------------------------------------------
-    */
+    const receiver = getReceiver();
 
-    const receiver = activeConversation?.participants?.find(
-      (participant) => String(participant._id) !== String(currentUserId),
-    );
-
-    if (!receiver) {
+    if (!receiver?._id) {
       console.error("Receiver not found");
       return;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | STOP TYPING
-    |--------------------------------------------------------------------------
-    */
-
-    socket.emit("stop_typing", {
-      conversationId,
-    });
+    socket.emit("stop_typing", { conversationId, userId: currentUserId });
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
-
       typingTimeoutRef.current = null;
     }
 
     setTyping(false);
 
-    /*
-    |--------------------------------------------------------------------------
-    | SEND THROUGH SOCKET
-    |--------------------------------------------------------------------------
-    */
-
-    socket.emit("sendMessage", {
-      conversationId,
-      receiverId: receiver._id,
+    const payload = {
+      conversationId: String(conversationId),
+      receiverId: String(receiver._id),
       content: text,
       messageType: "text",
+      ...(replyingTo?._id ? { replyTo: String(replyingTo._id) } : {}),
+    };
 
-      ...(replyingTo?._id
-        ? {
-            replyTo: replyingTo._id,
-          }
-        : {}),
-    });
+    socket.emit("sendMessage", payload);
 
     setMessage("");
     setReplyingTo(null);
   };
-
-  /*
-  |--------------------------------------------------------------------------
-  | TYPING
-  |--------------------------------------------------------------------------
-  */
 
   const handleTyping = (value: string) => {
     setMessage(value);
 
     const socket = socketRef.current;
 
-    if (!socket || !socket.connected) {
-      return;
-    }
-
-    /*
-     * Empty input
-     */
+    if (!socket || !socket.connected) return;
 
     if (!value.trim()) {
-      socket.emit("stop_typing", {
-        conversationId,
-      });
+      socket.emit("stop_typing", { conversationId });
 
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
-
         typingTimeoutRef.current = null;
       }
 
       return;
     }
 
-    /*
-     * Tell other user
-     */
-
-    socket.emit("typing", {
-      conversationId,
-    });
-
-    /*
-     * Reset timeout
-     */
+    socket.emit("typing", { conversationId });
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
     typingTimeoutRef.current = setTimeout(() => {
-      socket.emit("stop_typing", {
-        conversationId,
-      });
-
+      socket.emit("stop_typing", { conversationId });
       typingTimeoutRef.current = null;
     }, 1000);
   };
 
   const getOtherParticipant = () => {
-    if (!activeConversation?.participants?.length) {
-      return null;
-    }
+    if (!activeConversation?.participants?.length) return null;
 
     return (
       activeConversation.participants.find(
@@ -808,7 +627,6 @@ const handleSaveEdit = async () => {
         <div className="flex flex-col items-center gap-3">
           <div className="relative h-8 w-8">
             <div className="absolute inset-0 rounded-full border-2 border-zinc-200" />
-
             <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-zinc-950" />
           </div>
 
@@ -820,16 +638,9 @@ const handleSaveEdit = async () => {
     );
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | UI
-  |--------------------------------------------------------------------------
-  */
-
   return (
     <section className="flex min-w-0 flex-1 flex-col bg-zinc-50">
       {/* HEADER */}
-
       <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           {onBack && (
@@ -841,8 +652,6 @@ const handleSaveEdit = async () => {
               <ArrowLeft size={20} />
             </button>
           )}
-
-          {/* AVATAR */}
 
           <div className="relative shrink-0">
             {user?.profileImage || user?.avatar ? (
@@ -857,8 +666,6 @@ const handleSaveEdit = async () => {
               </div>
             )}
           </div>
-
-          {/* USER INFO */}
 
           <div className="min-w-0">
             <h2 className="truncate text-sm font-bold text-zinc-950">
@@ -885,8 +692,6 @@ const handleSaveEdit = async () => {
           </div>
         </div>
 
-        {/* ACTIONS */}
-
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -912,27 +717,21 @@ const handleSaveEdit = async () => {
       </header>
 
       {/* MESSAGES */}
-
       <div
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto px-4 py-6 sm:px-8"
       >
         <div className="mx-auto max-w-3xl space-y-3">
-          {/* TODAY */}
-
           <div className="mb-6 flex justify-center">
             <span className="rounded-full bg-white px-3 py-1 text-[10px] font-medium text-zinc-400 shadow-sm ring-1 ring-zinc-200">
               Today
             </span>
           </div>
 
-          {/* LOADING */}
-
           {loadingMessages ? (
             <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
               <div className="relative h-8 w-8">
                 <div className="absolute inset-0 rounded-full border-2 border-zinc-200" />
-
                 <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-zinc-950" />
               </div>
 
@@ -941,8 +740,6 @@ const handleSaveEdit = async () => {
               </p>
             </div>
           ) : messages.length === 0 ? (
-            /* EMPTY */
-
             <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
                 <Send size={18} className="text-zinc-400" />
@@ -957,15 +754,11 @@ const handleSaveEdit = async () => {
               </p>
             </div>
           ) : (
-            /* MESSAGE LIST */
-
             messages.map((msg) => {
               const isMe = String(msg.senderId) === String(currentUserId);
 
               const replyTo = (
-                msg as Message & {
-                  replyTo?: Message | string | null;
-                }
+                msg as Message & { replyTo?: Message | string | null }
               ).replyTo;
 
               const replyMessage =
@@ -978,27 +771,20 @@ const handleSaveEdit = async () => {
                     isMe ? "justify-end" : "justify-start"
                   }`}
                 >
-                  {/* MESSAGE ACTION MENU */}
-
                   {selectedMessage?._id === msg._id && (
                     <div
                       className={`absolute bottom-full z-20 mb-2 flex items-center gap-1 rounded-xl border border-zinc-200 bg-white p-1.5 shadow-xl ${
                         isMe ? "right-0" : "left-0"
                       }`}
                     >
-                      {/* REPLY */}
-
                       <button
                         type="button"
                         onClick={() => handleReply(msg)}
                         className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
                       >
                         <Reply size={15} />
-
                         <span>Reply</span>
                       </button>
-
-                      {/* EDIT */}
 
                       {isMe && msg.messageType === "text" && !msg.isDeleted && (
                         <button
@@ -1007,28 +793,23 @@ const handleSaveEdit = async () => {
                           className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
                         >
                           <Pencil size={14} />
-
                           <span>Edit</span>
                         </button>
                       )}
 
-                      {/* DELETE */}
-
                       <button
                         type="button"
                         onClick={() => {
-                          deleteExistingMessage(msg._id);setSelectedMessage(null);
+                          deleteExistingMessage(msg._id);
+                          setSelectedMessage(null);
                         }}
                         className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-red-600 transition hover:bg-red-50"
                       >
                         <Trash2 size={14} />
-
                         <span>Delete</span>
                       </button>
                     </div>
                   )}
-
-                  {/* MESSAGE */}
 
                   <div
                     onTouchStart={(e) => handleMessageTouchStart(e, msg)}
@@ -1040,26 +821,24 @@ const handleSaveEdit = async () => {
                       setSelectedMessage(msg);
                     }}
                     className={`
-          max-w-[80%]
-          sm:max-w-[65%]
-          px-4 py-3
-          select-none
-          touch-pan-y
-          transition
-          ${
-            selectedMessage?._id === msg._id
-              ? "ring-2 ring-zinc-400 ring-offset-2"
-              : ""
-          }
-          ${
-            isMe
-              ? "rounded-2xl rounded-br-md bg-zinc-950 text-white"
-              : "rounded-2xl rounded-bl-md border border-zinc-200 bg-white text-zinc-900"
-          }
-        `}
+                      max-w-[80%]
+                      sm:max-w-[65%]
+                      px-4 py-3
+                      select-none
+                      touch-pan-y
+                      transition
+                      ${
+                        selectedMessage?._id === msg._id
+                          ? "ring-2 ring-zinc-400 ring-offset-2"
+                          : ""
+                      }
+                      ${
+                        isMe
+                          ? "rounded-2xl rounded-br-md bg-zinc-950 text-white"
+                          : "rounded-2xl rounded-bl-md border border-zinc-200 bg-white text-zinc-900"
+                      }
+                    `}
                   >
-                    {/* REPLIED MESSAGE */}
-
                     {replyMessage && (
                       <div
                         className={`mb-2 rounded-lg border-l-2 px-3 py-2 ${
@@ -1086,25 +865,124 @@ const handleSaveEdit = async () => {
                       </div>
                     )}
 
-                    {/* MESSAGE TEXT */}
+                    {/* REPLY */}
+                    {replyMessage && (
+                      <div
+                        className={`mb-2 rounded-lg border-l-2 px-3 py-2 ${
+                          isMe
+                            ? "border-zinc-400 bg-zinc-800"
+                            : "border-zinc-950 bg-zinc-50"
+                        }`}
+                      >
+                        <p
+                          className={`text-[10px] font-semibold ${
+                            isMe ? "text-zinc-300" : "text-zinc-600"
+                          }`}
+                        >
+                          Replied message
+                        </p>
 
-                    <p className="text-sm leading-5">
-                      {msg.content}
+                        <p
+                          className={`mt-0.5 line-clamp-2 text-xs ${
+                            isMe ? "text-zinc-300" : "text-zinc-500"
+                          }`}
+                        >
+                          {replyMessage.content ||
+                            replyMessage.attachment?.name ||
+                            "Attachment"}
+                        </p>
+                      </div>
+                    )}
 
-                      {msg.isEdited && !msg.isDeleted && (
-                        <span className="ml-1.5 text-[10px] text-zinc-400">
-                          (edited)
-                        </span>
-                      )}
-                    </p>
+                    {/* ATTACHMENT */}
+                    {msg.attachment && (
+                      <div className="mb-2">
+                        {msg.messageType === "image" ? (
+                          <a
+                            href={msg.attachment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <img
+                              src={msg.attachment.url}
+                              alt={msg.attachment.name}
+                              className="max-h-72 max-w-full rounded-xl object-cover"
+                            />
+                          </a>
+                        ) : msg.messageType === "video" ? (
+                          <video
+                            src={msg.attachment.url}
+                            controls
+                            className="max-h-72 max-w-full rounded-xl"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <a
+                            href={msg.attachment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className={`flex min-w-[220px] max-w-[300px] items-center gap-3 rounded-xl p-3 transition ${
+                              isMe
+                                ? "bg-zinc-800 hover:bg-zinc-700"
+                                : "bg-zinc-100 hover:bg-zinc-200"
+                            }`}
+                          >
+                            <div
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                                isMe ? "bg-zinc-700" : "bg-white"
+                              }`}
+                            >
+                              <FileText
+                                size={19}
+                                className={
+                                  isMe ? "text-white" : "text-zinc-700"
+                                }
+                              />
+                            </div>
 
-                    {/* TIME */}
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className={`truncate text-xs font-semibold ${
+                                  isMe ? "text-white" : "text-zinc-900"
+                                }`}
+                              >
+                                {msg.attachment.name}
+                              </p>
 
-                    <div
-                      className={`mt-1.5 text-[10px] ${
-                        isMe ? "text-zinc-400" : "text-zinc-400"
-                      }`}
-                    >
+                              <p
+                                className={`mt-0.5 text-[10px] ${
+                                  isMe ? "text-zinc-400" : "text-zinc-500"
+                                }`}
+                              >
+                                {msg.attachment.type?.split("/")?.[1]?.toUpperCase() || "FILE"}
+                                {" • "}
+                                {(msg.attachment.size / 1024 / 1024).toFixed(
+                                  2,
+                                )}{" "}
+                                MB
+                              </p>
+                            </div>
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* TEXT */}
+                    {msg.content && (
+                      <p className="text-sm leading-5">
+                        {msg.content}
+
+                        {msg.isEdited && !msg.isDeleted && (
+                          <span className="ml-1.5 text-[10px] text-zinc-400">
+                            (edited)
+                          </span>
+                        )}
+                      </p>
+                    )}
+
+                    <div className="mt-1.5 text-[10px] text-zinc-400">
                       {formatTime(msg.createdAt)}
                     </div>
                   </div>
@@ -1113,16 +991,12 @@ const handleSaveEdit = async () => {
             })
           )}
 
-          {/* TYPING */}
-
           {typing && !loadingMessages && (
             <div className="flex justify-start">
               <div className="rounded-2xl rounded-bl-md border border-zinc-200 bg-white px-4 py-3">
                 <div className="flex gap-1">
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400" />
-
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:150ms]" />
-
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-400 [animation-delay:300ms]" />
                 </div>
               </div>
@@ -1132,7 +1006,6 @@ const handleSaveEdit = async () => {
       </div>
 
       {/* INPUT */}
-
       <div className="mb-20 border-t border-zinc-200 bg-white p-3 sm:mb-12 sm:p-4">
         {replyingTo && (
           <div className="mx-auto mb-2 flex max-w-3xl items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm">
@@ -1160,17 +1033,71 @@ const handleSaveEdit = async () => {
           </div>
         )}
 
+        {selectedFile && (
+          <div className="mx-auto mb-2 flex max-w-3xl items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100">
+              {selectedFile.type.startsWith("image/") ? (
+                <img
+                  src={URL.createObjectURL(selectedFile)}
+                  alt=""
+                  className="h-9 w-9 rounded-lg object-cover"
+                />
+              ) : (
+                <FileText size={17} className="text-zinc-600" />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-zinc-800">
+                {selectedFile.name}
+              </p>
+
+              <p className="text-[10px] text-zinc-400">
+                {isSendingFile
+                  ? "Sending..."
+                  : `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelectedFile(null)}
+              disabled={isSendingFile}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
         <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-2 focus-within:border-zinc-400 focus-within:bg-white">
-          {/* ATTACHMENT */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+
+              if (!file) return;
+
+              if (file.size > 50 * 1024 * 1024) {
+                alert("Maximum file size is 50MB");
+                e.target.value = "";
+                return;
+              }
+
+              setSelectedFile(file);
+            }}
+          />
 
           <button
             type="button"
+            onClick={() => fileInputRef.current?.click()}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-zinc-500 transition hover:bg-zinc-200 hover:text-zinc-950"
           >
             <Paperclip size={19} />
           </button>
-
-          {/* INPUT */}
 
           <input
             value={message}
@@ -1186,8 +1113,6 @@ const handleSaveEdit = async () => {
             className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-60"
           />
 
-          {/* EMOJI */}
-
           <button
             type="button"
             className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-zinc-500 transition hover:bg-zinc-200 hover:text-zinc-950 sm:flex"
@@ -1195,12 +1120,14 @@ const handleSaveEdit = async () => {
             <Smile size={19} />
           </button>
 
-          {/* SEND */}
-
           <button
             type="button"
             onClick={handleSend}
-            disabled={!message.trim() || !socketConnected}
+            disabled={
+              (!message.trim() && !selectedFile) ||
+              (!socketConnected && !selectedFile) ||
+              isSendingFile
+            }
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-30"
           >
             <Send size={17} />
@@ -1211,6 +1138,7 @@ const handleSaveEdit = async () => {
           Press Enter to send
         </p>
       </div>
+
       {editModal && editingMessage && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
@@ -1224,8 +1152,6 @@ const handleSaveEdit = async () => {
             className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            {/* HEADER */}
-
             <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
               <div>
                 <h3 className="text-base font-bold text-zinc-950">
@@ -1246,8 +1172,6 @@ const handleSaveEdit = async () => {
                 <X size={17} />
               </button>
             </div>
-
-            {/* BODY */}
 
             <div className="p-5">
               <textarea
@@ -1281,8 +1205,6 @@ const handleSaveEdit = async () => {
                 </span>
               </div>
             </div>
-
-            {/* FOOTER */}
 
             <div className="flex items-center justify-end gap-2 border-t border-zinc-100 bg-zinc-50 px-5 py-3">
               <button

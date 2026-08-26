@@ -34,7 +34,7 @@ export default function Footer() {
           return (
             <button
               key={tab.id}
-              onClick={() =>{ setActive(tab.id); appRouter.replace(tab.id)}}
+              onClick={() =>{ setActive(tab.id); appRouter.replace(`/${tab.id}`)}}
               className={`
                 flex h-[48px] w-[48px]
                 items-center justify-center

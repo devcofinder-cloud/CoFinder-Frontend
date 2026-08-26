@@ -56,9 +56,10 @@ interface ChatState {
   sendNewMessage: (data: {
     conversationId: string;
     receiverId: string;
-    content: string;
-    messageType?: string;
+    content?: string;
+    messageType?: "text" | "image" | "video" | "file";
     replyTo?: string;
+    attachment?: File | null;
   }) => Promise<Message | null>;
 
   editExistingMessage: (
@@ -302,14 +303,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       const response = await sendMessage({
         conversationId: data.conversationId,
-
         receiverId: data.receiverId,
-
-        content: data.content,
-
+        content: data.content || "",
         messageType: data.messageType || "text",
-
         replyTo: data.replyTo,
+        attachment: data.attachment,
       });
 
       const rawMessage = response.data?.data || response.data || null;
@@ -456,7 +454,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             ? {
                 ...message,
                 isRead: true,
-                readAt: message.readAt || new Date().toISOString(),
+                readAt: new Date().toISOString(),
               }
             : message,
         ),
