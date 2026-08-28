@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserPlus, Search, MapPin, ChartBar } from "lucide-react";
+import { UserPlus, Search, MapPin, ChartBar, MessageCircle, Badge, BadgeIcon, BadgeCheck } from "lucide-react";
 import { getOtherUsers } from "@/app/services/dashboard.service";
 import { useRouter } from "next/navigation";
 import { useChatStore } from "@/app/store/chatStore";
@@ -160,6 +160,7 @@ export default function ConnectionsPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredUsers.map((user) => (
               <div
+              onClick={()=>appRouter.push(`/user-profile/${user._id}`)}
                 key={user._id}
                 className="group rounded-2xl border border-zinc-200 bg-white p-5 transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-lg hover:shadow-zinc-200/50"
               >
@@ -185,11 +186,17 @@ export default function ConnectionsPage() {
 
                     <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-zinc-700" />
                   </div>
-
+{/* 
                   {user.completionStatus !== undefined && (
                     <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-semibold text-zinc-500">
                       {user.completionStatus}% complete
                     </span>
+                  )} */}
+
+                  {user.archetype && (
+                    <div className=" inline-flex items-center gap-3 rounded-lg bg-zinc-100 px-3 py-2 text-sm  font-semibold text-zinc-700">
+                     <BadgeCheck size={20}/> {user.archetype}
+                    </div>
                   )}
                 </div>
 
@@ -205,11 +212,7 @@ export default function ConnectionsPage() {
                     </p>
                   )}
 
-                  {user.archetype && (
-                    <div className="mt-3 inline-flex rounded-lg bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-700">
-                      {user.archetype}
-                    </div>
-                  )}
+                  
 
                   {user.location && (
                     <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-400">
@@ -225,7 +228,7 @@ export default function ConnectionsPage() {
                   disabled={creatingChat === user._id}
                   className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-zinc-950 text-sm font-semibold text-white transition hover:bg-zinc-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <ChartBar size={16} />
+                  <MessageCircle size={16} />
 
                   {creatingChat === user._id
                     ? "Starting..."

@@ -439,8 +439,7 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
         <button
           className="flex items-center gap-1.5 rounded-lg bg-zinc-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800"
           onClick={() => {
-            // Yahan baad me profile route laga dena
-            // router.push(`/profile/${post.author._id}`)
+            appRouter.push(`/user-profile/${post.author._id}`)
             console.log("Open profile:", post.author._id);
           }}
         >

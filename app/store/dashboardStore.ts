@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
     getOtherPosts,
+    getPostsByUserId,
     getUserProfileById,
 } from "../services/dashboard.service";
 
@@ -12,6 +13,8 @@ export interface PostMedia {
     url: string;
     publicId: string;
     type: "image" | "video" | "file";
+    name: string | null;
+    size: number | null;
 }
 
 export interface PostAuthor {
@@ -24,11 +27,14 @@ export interface PostAuthor {
 
 export interface Post {
     _id: string;
+    author: PostAuthor;
     content?: string;
-    media?: PostMedia[];
-    author?: PostAuthor;
-    createdAt?: string;
-    updatedAt?: string;
+    media: PostMedia[];
+    likes: string[];
+    commentsCount: number;
+    isDeleted: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
 
 /* =========================================================
@@ -109,24 +115,18 @@ export interface SocialLinks {
 export interface ProfessionalProfile {
     _id: string;
     user: string;
-
     headline: string;
     about: string;
-
     currentRole: string;
     currentCompany: string;
-
     industry: string;
     experienceLevel: string;
-
     skills: Skill[];
     experience: Experience[];
     education: Education[];
     projects: Project[];
     certifications: Certification[];
-
     socialLinks: SocialLinks;
-
     createdAt: string;
     updatedAt: string;
 }
@@ -145,17 +145,13 @@ export interface UserProfileData {
 ========================================================= */
 
 interface DashboardState {
-    /* Posts */
-
     posts: Post[];
     loadingPosts: boolean;
-
-    /* Profile */
 
     userData: UserProfileData | null;
     loadingProfile: boolean;
 
-    /* Actions */
+    userPosts: Post[];
 
     fetchPosts: () => Promise<void>;
 
@@ -164,103 +160,91 @@ interface DashboardState {
     ) => Promise<void>;
 
     clearProfile: () => void;
+
+    fetchPostsByUserId: (
+        userId: string
+    ) => Promise<void>;
 }
 
 /* =========================================================
    STORE
 ========================================================= */
 
-export const dashboardStore =
-    create<DashboardState>((set) => ({
-        /* =====================================================
-           INITIAL STATE
-        ===================================================== */
+export const dashboardStore = create<DashboardState>((set) => ({
+    posts: [],
+    loadingPosts: false,
 
-        posts: [],
-        loadingPosts: false,
+    userData: null,
+    loadingProfile: false,
 
-        userData: null,
-        loadingProfile: false,
+    userPosts:[],
 
-        /* =====================================================
-           FETCH POSTS
-        ===================================================== */
+    fetchPosts: async () => {
+        try {
+            set({ loadingPosts: true });
 
-        fetchPosts: async () => {
-            try {
-                set({
-                    loadingPosts: true,
-                });
+            const response = await getOtherPosts();
 
-                const response = await getOtherPosts();
+            console.log("Posts response:", response);
 
-                console.log(
-                    "Posts response:",
-                    response
-                );
+            set({
+                posts: response.data?.data || [],
+                loadingPosts: false,
+            });
+        } catch (error) {
+            console.error("Failed to fetch posts:", error);
 
-                set({
-                    posts:
-                        response.data?.data || [],
-                    loadingPosts: false,
-                });
-            } catch (error) {
-                console.error(
-                    "Failed to fetch posts:",
-                    error
-                );
+            set({
+                posts: [],
+                loadingPosts: false,
+            });
+        }
+    },
 
-                set({
-                    posts: [],
-                    loadingPosts: false,
-                });
-            }
-        },
+    fetchProfileById: async (userId: string) => {
+        try {
+            set({ loadingProfile: true });
 
-        /* =====================================================
-           FETCH PROFILE BY ID
-        ===================================================== */
+            const response = await getUserProfileById(userId);
 
-        fetchProfileById: async (userId: string) => {
-            try {
-                set({
-                    loadingProfile: true,
-                });
+            console.log("Profile response:", response);
 
-                const response =
-                    await getUserProfileById(userId);
+            set({
+                userData: response.data?.data || null,
+                loadingProfile: false,
+            });
+        } catch (error) {
+            console.error("Failed to fetch profile:", error);
 
-                console.log(
-                    "Profile response:",
-                    response
-                );
-
-                set({
-                    userData:
-                        response.data?.data || null,
-
-                    loadingProfile: false,
-                });
-            } catch (error) {
-                console.error(
-                    "Failed to fetch profile:",
-                    error
-                );
-
-                set({
-                    userData: null,
-                    loadingProfile: false,
-                });
-            }
-        },
-
-        /* =====================================================
-           CLEAR PROFILE
-        ===================================================== */
-
-        clearProfile: () => {
             set({
                 userData: null,
+                loadingProfile: false,
             });
-        },
-    }));
+        }
+    },
+
+    clearProfile: () => {
+        set({
+            userData: null,
+        });
+    },
+
+    fetchPostsByUserId: async (userId: string) => {
+    try {
+        set({loadingPosts:true})
+        const response = await getPostsByUserId(userId);
+
+        set({
+            userPosts: response.data?.data || [],
+        });
+    } catch (error) {
+        console.error("Failed to fetch user posts:", error);
+
+        set({
+            userPosts: [],
+        });
+    }finally{
+        set({loadingPosts:false})
+    }
+},
+}));

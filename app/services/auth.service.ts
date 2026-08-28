@@ -18,7 +18,66 @@ export interface RegisterPayload {
   gender: string;
 }
 
+export interface ProfessionalProfile {
+  _id: string;
+  user: string;
 
+  headline?: string;
+  about?: string;
+  currentRole?: string;
+  currentCompany?: string;
+  industry?: string;
+  experienceLevel?: string;
+
+  skills?: {
+    name: string;
+    level: string;
+  }[];
+
+  experience?: {
+    company: string;
+    role: string;
+    location: string;
+    startDate: string;
+    endDate?: string;
+    description: string;
+  }[];
+
+  education?: {
+    institution: string;
+    degree: string;
+    fieldOfStudy: string;
+    startDate: string;
+    endDate?: string;
+    description: string;
+  }[];
+
+  projects?: {
+    title: string;
+    description: string;
+    technologies: string[];
+    projectUrl?: string;
+    githubUrl?: string;
+  }[];
+
+  certifications?: {
+    name: string;
+    issuingOrganization: string;
+    issueDate: string;
+    credentialId?: string;
+    credentialUrl?: string;
+  }[];
+
+  socialLinks?: {
+    linkedin?: string;
+    github?: string;
+    portfolio?: string;
+    twitter?: string;
+  };
+
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 export interface UpdatePayload {
   name?: string;

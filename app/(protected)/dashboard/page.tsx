@@ -398,7 +398,9 @@ export default function DashboardPage() {
                     Handpicked matches based on your tech stack & vision
                   </p>
                 </div>
-                <button className="flex  gap-1   text-xs font-semibold text-zinc-600 transition hover:text-black">
+                <button
+                onClick={()=>appRouter.push('/connections')}
+                className="flex  gap-1   text-xs font-semibold text-zinc-600 transition hover:text-black">
                   <span>View All</span>
                   <ArrowUpRight className="h-3.5 w-3.5 hidden sm:block" />
                 </button>

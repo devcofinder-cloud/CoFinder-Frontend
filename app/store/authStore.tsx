@@ -4,8 +4,10 @@ import { persist } from "zustand/middleware";
 import {
   getProfile,
   editProfile,
+  getProfessionalProfile,
   updateProfessionalProfile,
   UpdateProfessionalProfilePayload,
+  ProfessionalProfile,
 } from "../services/auth.service";
 
 interface User {
@@ -48,7 +50,6 @@ interface User {
   __v: number;
 }
 
-
 interface UpdateProfilePayload {
   name?: string;
   username?: string;
@@ -64,13 +65,20 @@ interface UpdateProfilePayload {
 interface UserStore {
   user: User | null;
 
+  // Professional profile
+  professionalProfile: ProfessionalProfile | null;
+
   loading: boolean;
+  professionalProfileLoading: boolean;
+
   updatingProfile: boolean;
   updatingProfessionalProfile: boolean;
 
   setUser: (user: User) => void;
 
   fetchProfile: () => Promise<void>;
+
+  fetchProfessionalProfile: () => Promise<void>;
 
   updateProfile: (
     data: UpdateProfilePayload
@@ -88,12 +96,20 @@ export const authStore = create<UserStore>()(
     (set) => ({
       user: null,
 
+      // Professional profile initial state
+      professionalProfile: null,
+
       loading: false,
+      professionalProfileLoading: false,
+
       updatingProfile: false,
       updatingProfessionalProfile: false,
 
       setUser: (user) => set({ user }),
 
+      // =========================
+      // GET USER PROFILE
+      // =========================
       fetchProfile: async () => {
         try {
           set({
@@ -122,13 +138,49 @@ export const authStore = create<UserStore>()(
         }
       },
 
+      // =========================
+      // GET PROFESSIONAL PROFILE
+      // =========================
+      fetchProfessionalProfile: async () => {
+        try {
+          set({
+            professionalProfileLoading: true,
+          });
+
+          const response =
+            await getProfessionalProfile();
+
+          const professionalProfile =
+            response.data?.data ||
+            response.data;
+
+          set({
+            professionalProfile,
+            professionalProfileLoading: false,
+          });
+        } catch (error) {
+          console.error(
+            "Failed to fetch professional profile:",
+            error
+          );
+
+          set({
+            professionalProfileLoading: false,
+          });
+        }
+      },
+
+      // =========================
+      // UPDATE USER PROFILE
+      // =========================
       updateProfile: async (data) => {
         try {
           set({
             updatingProfile: true,
           });
 
-          const response = await editProfile(data);
+          const response =
+            await editProfile(data);
 
           const updatedUser =
             response.data?.updatedProfile ||
@@ -166,6 +218,9 @@ export const authStore = create<UserStore>()(
         }
       },
 
+      // =========================
+      // UPDATE PROFESSIONAL PROFILE
+      // =========================
       updateProfessionalProfile: async (
         data
       ) => {
@@ -182,7 +237,16 @@ export const authStore = create<UserStore>()(
             response
           );
 
+          // GET latest professional profile
+          const profileResponse =
+            await getProfessionalProfile();
+
+          const professionalProfile =
+            profileResponse.data?.data ||
+            profileResponse.data;
+
           set({
+            professionalProfile,
             updatingProfessionalProfile: false,
           });
         } catch (error) {
@@ -199,10 +263,17 @@ export const authStore = create<UserStore>()(
         }
       },
 
+      // =========================
+      // LOGOUT
+      // =========================
       logout: () => {
         set({
           user: null,
+          professionalProfile: null,
+
           loading: false,
+          professionalProfileLoading: false,
+
           updatingProfile: false,
           updatingProfessionalProfile: false,
         });

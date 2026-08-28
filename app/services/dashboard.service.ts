@@ -12,3 +12,7 @@ export const getOtherPosts=()=>{
 export const getUserProfileById=(userId:String)=>{
     return api.get(`/dashboard/profile/${userId}`)
 }
+
+export const getPostsByUserId = (userId:string)=>{
+    return api.get(`/dashboard/profile/posts/${userId}`)
+}
