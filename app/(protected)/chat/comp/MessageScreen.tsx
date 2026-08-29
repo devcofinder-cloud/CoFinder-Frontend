@@ -20,6 +20,8 @@ import {
 
 import { Message } from "@/app/services/chat.service";
 import { useChatStore } from "@/app/store/chatStore";
+import MediaViewer from "./MediaViewer";
+import PdfViewer from "./PdfViewer";
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL;
 
@@ -50,6 +52,7 @@ export default function MessageScreen({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [editModal, setEditModal] = useState(false);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
@@ -69,6 +72,31 @@ export default function MessageScreen({
   const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const [mediaViewer, setMediaViewer] = useState<{
+    url: string;
+    type: "image" | "video";
+    name?: string;
+  } | null>(null);
+
+  const [pdfViewer, setPdfViewer] = useState<{
+    url: string;
+    name?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!selectedFile || !selectedFile.type.startsWith("image/")) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(selectedFile);
+    setPreviewUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [selectedFile]);
 
   // Load current user from localStorage
   useEffect(() => {
@@ -168,8 +196,8 @@ export default function MessageScreen({
 
     socket.on("new_message", (newMessage) => {
       console.log("🔥 SOCKET MESSAGE:", newMessage);
-  console.log("📎 ATTACHMENT:", newMessage.attachment);
-  console.log("📦 MESSAGE TYPE:", newMessage.messageType);
+      console.log("📎 ATTACHMENT:", newMessage.attachment);
+      console.log("📦 MESSAGE TYPE:", newMessage.messageType);
       const incomingConversationId =
         newMessage.conversationId ||
         newMessage.conversation?._id ||
@@ -621,22 +649,22 @@ export default function MessageScreen({
     });
   };
 
-  if (!activeConversation) {
-    return (
-      <section className="flex min-w-0 flex-1 items-center justify-center bg-zinc-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative h-8 w-8">
-            <div className="absolute inset-0 rounded-full border-2 border-zinc-200" />
-            <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-zinc-950" />
-          </div>
+  // if (!activeConversation) {
+  //   return (
+  //     <section className="flex min-w-0 flex-1 items-center justify-center bg-zinc-50">
+  //       <div className="flex flex-col items-center gap-3">
+  //         <div className="relative h-8 w-8">
+  //           <div className="absolute inset-0 rounded-full border-2 border-zinc-200" />
+  //           <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-zinc-950" />
+  //         </div>
 
-          <p className="text-sm font-medium text-zinc-500">
-            Loading your chat...
-          </p>
-        </div>
-      </section>
-    );
-  }
+  //         <p className="text-sm font-medium text-zinc-500">
+  //           Loading your chat...
+  //         </p>
+  //       </div>
+  //     </section>
+  //   );
+  // }
 
   return (
     <section className="flex min-w-0 flex-1 flex-col bg-zinc-50">
@@ -898,32 +926,73 @@ export default function MessageScreen({
                     {msg.attachment && (
                       <div className="mb-2">
                         {msg.messageType === "image" ? (
-                          <a
-                            href={msg.attachment.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+
+                              setMediaViewer({
+                                url: msg.attachment!.url,
+                                type: "image",
+                                name: msg.attachment!.name,
+                              });
+                            }}
+                            className="block overflow-hidden rounded-xl"
                           >
                             <img
                               src={msg.attachment.url}
-                              alt={msg.attachment.name}
+                              alt={msg.attachment.name || "Image"}
+                              className="max-h-72 max-w-full rounded-xl object-cover transition duration-200 active:scale-[0.98]"
+                            />
+                          </button>
+                        ) : msg.messageType === "video" ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+
+                              setMediaViewer({
+                                url: msg.attachment!.url,
+                                type: "video",
+                                name: msg.attachment!.name,
+                              });
+                            }}
+                            className="block overflow-hidden rounded-xl"
+                          >
+                            <video
+                              src={msg.attachment.url}
+                              muted
+                              playsInline
                               className="max-h-72 max-w-full rounded-xl object-cover"
                             />
-                          </a>
-                        ) : msg.messageType === "video" ? (
-                          <video
-                            src={msg.attachment.url}
-                            controls
-                            className="max-h-72 max-w-full rounded-xl"
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                          </button>
                         ) : (
-                          <a
-                            href={msg.attachment.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className={`flex min-w-[220px] max-w-[300px] items-center gap-3 rounded-xl p-3 transition ${
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+
+                              if (
+                                msg.attachment!.type === "application/pdf" ||
+                                msg
+                                  .attachment!.name?.toLowerCase()
+                                  .endsWith(".pdf")
+                              ) {
+                                setPdfViewer({
+                                  url: msg.attachment!.url,
+                                  name: msg.attachment!.name,
+                                });
+
+                                return;
+                              }
+
+                              window.open(
+                                msg.attachment!.url,
+                                "_blank",
+                                "noopener,noreferrer",
+                              );
+                            }}
+                            className={`flex min-w-[220px] max-w-[300px] items-center gap-3 rounded-xl p-3 text-left transition ${
                               isMe
                                 ? "bg-zinc-800 hover:bg-zinc-700"
                                 : "bg-zinc-100 hover:bg-zinc-200"
@@ -956,7 +1025,9 @@ export default function MessageScreen({
                                   isMe ? "text-zinc-400" : "text-zinc-500"
                                 }`}
                               >
-                                {msg.attachment.type?.split("/")?.[1]?.toUpperCase() || "FILE"}
+                                {msg.attachment.type
+                                  ?.split("/")?.[1]
+                                  ?.toUpperCase() || "FILE"}
                                 {" • "}
                                 {(msg.attachment.size / 1024 / 1024).toFixed(
                                   2,
@@ -964,7 +1035,7 @@ export default function MessageScreen({
                                 MB
                               </p>
                             </div>
-                          </a>
+                          </button>
                         )}
                       </div>
                     )}
@@ -1034,39 +1105,62 @@ export default function MessageScreen({
         )}
 
         {selectedFile && (
-          <div className="mx-auto mb-2 flex max-w-3xl items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-100">
-              {selectedFile.type.startsWith("image/") ? (
+          <div className="mx-auto mb-2 max-w-3xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+            {selectedFile.type.startsWith("image/") && previewUrl ? (
+              <div className="relative bg-zinc-950">
                 <img
-                  src={URL.createObjectURL(selectedFile)}
-                  alt=""
-                  className="h-9 w-9 rounded-lg object-cover"
+                  src={previewUrl}
+                  alt={selectedFile.name}
+                  className="mx-auto max-h-[280px] w-full object-contain"
                 />
-              ) : (
-                <FileText size={17} className="text-zinc-600" />
-              )}
-            </div>
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-zinc-800">
-                {selectedFile.name}
-              </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFile(null);
 
-              <p className="text-[10px] text-zinc-400">
-                {isSendingFile
-                  ? "Sending..."
-                  : `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`}
-              </p>
-            </div>
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                  disabled={isSendingFile}
+                  className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition active:scale-90 disabled:opacity-40"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 p-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
+                  <FileText size={19} className="text-zinc-600" />
+                </div>
 
-            <button
-              type="button"
-              onClick={() => setSelectedFile(null)}
-              disabled={isSendingFile}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <X size={16} />
-            </button>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-zinc-900">
+                    {selectedFile.name}
+                  </p>
+
+                  <p className="mt-0.5 text-[10px] text-zinc-400">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFile(null);
+
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                  disabled={isSendingFile}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition active:scale-90 hover:bg-zinc-100 hover:text-zinc-900"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -1236,6 +1330,21 @@ export default function MessageScreen({
           </div>
         </div>
       )}
+
+      <MediaViewer
+        isOpen={!!mediaViewer}
+        onClose={() => setMediaViewer(null)}
+        url={mediaViewer?.url || ""}
+        type={mediaViewer?.type || "image"}
+        name={mediaViewer?.name}
+      />
+
+      <PdfViewer
+        isOpen={!!pdfViewer}
+        onClose={() => setPdfViewer(null)}
+        url={pdfViewer?.url || ""}
+        name={pdfViewer?.name}
+      />
     </section>
   );
 }
