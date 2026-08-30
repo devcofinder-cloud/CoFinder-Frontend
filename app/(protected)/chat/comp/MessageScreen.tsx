@@ -44,7 +44,6 @@ export default function MessageScreen({
     addMessage,
     editExistingMessage,
     deleteExistingMessage,
-    sendNewMessage,
   } = useChatStore();
 
   const [message, setMessage] = useState("");
@@ -98,18 +97,12 @@ export default function MessageScreen({
     };
   }, [selectedFile]);
 
-  // Load current user from localStorage
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
-
-      if (!storedUser) {
-        console.error("User not found in localStorage");
-        return;
-      }
+      if (!storedUser) return;
 
       const user = JSON.parse(storedUser);
-
       if (user?._id) {
         setCurrentUserId(String(user._id));
       }
@@ -118,7 +111,6 @@ export default function MessageScreen({
     }
   }, []);
 
-  // Load conversation + messages
   useEffect(() => {
     if (!conversationId) return;
 
@@ -127,11 +119,8 @@ export default function MessageScreen({
     const loadChat = async () => {
       try {
         setMessages([]);
-
         await fetchConversation(conversationId);
-
         if (cancelled) return;
-
         await fetchMessages(conversationId);
       } catch (error) {
         console.error("Failed to load chat:", error);
@@ -146,20 +135,14 @@ export default function MessageScreen({
     };
   }, [conversationId, fetchConversation, fetchMessages, setMessages]);
 
-  // Auto scroll to bottom on new messages / typing indicator
   useEffect(() => {
     const container = messagesContainerRef.current;
-
     if (!container) return;
-
     container.scrollTop = container.scrollHeight;
   }, [messages, typing]);
 
-  // Socket connection lifecycle
   useEffect(() => {
-    if (!conversationId || !currentUserId) {
-      return;
-    }
+    if (!conversationId || !currentUserId) return;
 
     if (!SOCKET_URL) {
       console.error("NEXT_PUBLIC_SOCKET_URL is not configured");
@@ -167,7 +150,6 @@ export default function MessageScreen({
     }
 
     const token = localStorage.getItem("token");
-
     if (!token) {
       console.error("JWT token not found. Socket cannot connect.");
       return;
@@ -195,9 +177,6 @@ export default function MessageScreen({
     });
 
     socket.on("new_message", (newMessage) => {
-      console.log("🔥 SOCKET MESSAGE:", newMessage);
-      console.log("📎 ATTACHMENT:", newMessage.attachment);
-      console.log("📦 MESSAGE TYPE:", newMessage.messageType);
       const incomingConversationId =
         newMessage.conversationId ||
         newMessage.conversation?._id ||
@@ -240,7 +219,6 @@ export default function MessageScreen({
       }) => {
         if (String(id) !== String(conversationId)) return;
         if (userId && String(userId) === String(currentUserId)) return;
-
         setTyping(true);
       },
     );
@@ -256,7 +234,6 @@ export default function MessageScreen({
       }) => {
         if (String(id) !== String(conversationId)) return;
         if (userId && String(userId) === String(currentUserId)) return;
-
         setTyping(false);
       },
     );
@@ -277,14 +254,12 @@ export default function MessageScreen({
       }
 
       const messageId = updatedMessage._id;
-
       if (!messageId) {
         console.error("Edited message ID missing");
         return;
       }
 
       const content = updatedMessage.content;
-
       if (typeof content !== "string") {
         console.error("Edited message content missing");
         return;
@@ -378,7 +353,6 @@ export default function MessageScreen({
     }
   };
 
-  // Long press to open the message action menu (mobile)
   const handleMessageTouchStart = (e: React.TouchEvent, msg: Message) => {
     const touch = e.touches[0];
 
@@ -405,22 +379,11 @@ export default function MessageScreen({
     const deltaX = touch.clientX - touchStartXRef.current;
     const deltaY = touch.clientY - touchStartYRef.current;
 
-    // Cancel long press once the finger moves too far
     if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
       }
-    }
-
-    // Swipe right to reply
-    if (deltaX > 70 && Math.abs(deltaY) < 50) {
-      if (longPressTimerRef.current) {
-        clearTimeout(longPressTimerRef.current);
-        longPressTimerRef.current = null;
-      }
-
-      touchStartXRef.current = null;
     }
   };
 
@@ -460,9 +423,13 @@ export default function MessageScreen({
     setReplyingTo(null);
   };
 
-  const getReceiver = () => {
-    return activeConversation?.participants?.find(
-      (participant) => String(participant._id) !== String(currentUserId),
+  const getOtherParticipant = () => {
+    if (!activeConversation?.participants?.length) return null;
+
+    return (
+      activeConversation.participants.find(
+        (participant) => String(participant._id) !== String(currentUserId),
+      ) || activeConversation.participants[0]
     );
   };
 
@@ -472,7 +439,6 @@ export default function MessageScreen({
     return "file";
   };
 
-  // Uploads the currently selected attachment
   const sendAttachment = async (file: File) => {
     if (!conversationId) {
       console.error("Conversation ID missing");
@@ -484,15 +450,13 @@ export default function MessageScreen({
       return;
     }
 
-    const receiver = getReceiver();
-
+    const receiver = getOtherParticipant();
     if (!receiver?._id) {
       console.error("Receiver not found");
       return;
     }
 
     const socket = socketRef.current;
-
     if (!socket || !socket.connected) {
       console.error("Socket is not connected");
       return;
@@ -508,15 +472,11 @@ export default function MessageScreen({
         receiverId: String(receiver._id),
         content: "",
         messageType: getMessageType(file),
-
         replyTo: replyingTo?._id ? String(replyingTo._id) : null,
-
         attachment: {
           name: file.name,
           type: file.type,
           size: file.size,
-
-          // ArrayBuffer socket.io se transmit ho jayega
           buffer: arrayBuffer,
         },
       };
@@ -537,7 +497,6 @@ export default function MessageScreen({
   };
 
   const handleSend = () => {
-    // Sending an attachment takes priority over the text field
     if (selectedFile) {
       sendAttachment(selectedFile);
       return;
@@ -557,7 +516,6 @@ export default function MessageScreen({
     }
 
     const socket = socketRef.current;
-
     if (!socket) {
       console.error("Socket instance not available");
       return;
@@ -568,8 +526,7 @@ export default function MessageScreen({
       return;
     }
 
-    const receiver = getReceiver();
-
+    const receiver = getOtherParticipant();
     if (!receiver?._id) {
       console.error("Receiver not found");
       return;
@@ -602,7 +559,6 @@ export default function MessageScreen({
     setMessage(value);
 
     const socket = socketRef.current;
-
     if (!socket || !socket.connected) return;
 
     if (!value.trim()) {
@@ -628,16 +584,6 @@ export default function MessageScreen({
     }, 1000);
   };
 
-  const getOtherParticipant = () => {
-    if (!activeConversation?.participants?.length) return null;
-
-    return (
-      activeConversation.participants.find(
-        (participant) => String(participant._id) !== String(currentUserId),
-      ) || activeConversation.participants[0]
-    );
-  };
-
   const user = getOtherParticipant();
 
   const formatTime = (date?: string) => {
@@ -649,26 +595,8 @@ export default function MessageScreen({
     });
   };
 
-  // if (!activeConversation) {
-  //   return (
-  //     <section className="flex min-w-0 flex-1 items-center justify-center bg-zinc-50">
-  //       <div className="flex flex-col items-center gap-3">
-  //         <div className="relative h-8 w-8">
-  //           <div className="absolute inset-0 rounded-full border-2 border-zinc-200" />
-  //           <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-zinc-950" />
-  //         </div>
-
-  //         <p className="text-sm font-medium text-zinc-500">
-  //           Loading your chat...
-  //         </p>
-  //       </div>
-  //     </section>
-  //   );
-  // }
-
   return (
     <section className="flex min-w-0 flex-1 flex-col bg-zinc-50">
-      {/* HEADER */}
       <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           {onBack && (
@@ -744,7 +672,6 @@ export default function MessageScreen({
         </div>
       </header>
 
-      {/* MESSAGES */}
       <div
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto px-4 py-6 sm:px-8"
@@ -888,33 +815,6 @@ export default function MessageScreen({
                             isMe ? "text-zinc-300" : "text-zinc-500"
                           }`}
                         >
-                          {replyMessage.content}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* REPLY */}
-                    {replyMessage && (
-                      <div
-                        className={`mb-2 rounded-lg border-l-2 px-3 py-2 ${
-                          isMe
-                            ? "border-zinc-400 bg-zinc-800"
-                            : "border-zinc-950 bg-zinc-50"
-                        }`}
-                      >
-                        <p
-                          className={`text-[10px] font-semibold ${
-                            isMe ? "text-zinc-300" : "text-zinc-600"
-                          }`}
-                        >
-                          Replied message
-                        </p>
-
-                        <p
-                          className={`mt-0.5 line-clamp-2 text-xs ${
-                            isMe ? "text-zinc-300" : "text-zinc-500"
-                          }`}
-                        >
                           {replyMessage.content ||
                             replyMessage.attachment?.name ||
                             "Attachment"}
@@ -922,7 +822,6 @@ export default function MessageScreen({
                       </div>
                     )}
 
-                    {/* ATTACHMENT */}
                     {msg.attachment && (
                       <div className="mb-2">
                         {msg.messageType === "image" ? (
@@ -1040,7 +939,6 @@ export default function MessageScreen({
                       </div>
                     )}
 
-                    {/* TEXT */}
                     {msg.content && (
                       <p className="text-sm leading-5">
                         {msg.content}
@@ -1076,7 +974,6 @@ export default function MessageScreen({
         </div>
       </div>
 
-      {/* INPUT */}
       <div className="mb-20 border-t border-zinc-200 bg-white p-3 sm:mb-12 sm:p-4">
         {replyingTo && (
           <div className="mx-auto mb-2 flex max-w-3xl items-center gap-3 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm">
