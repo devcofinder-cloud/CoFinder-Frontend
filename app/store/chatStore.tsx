@@ -18,7 +18,10 @@ import {
   getTotalUnreadCount,
   searchMessages,
   clearConversation,
+ 
 } from "@/app/services/chat.service";
+
+import { deleteConversation as deleteConversationService } from "@/app/services/chat.service";
 
 /*
 |--------------------------------------------------------------------------
@@ -93,6 +96,9 @@ interface ChatState {
   addMessage: (message: Message) => void;
 
   clearChat: () => void;
+
+deleteConversation: (conversationId: string) => Promise<boolean>;
+deleteLoading: boolean;
 }
 
 /*
@@ -148,6 +154,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   unreadCounts: {},
   totalUnreadCount: 0,
+  deleteLoading:false,
 
   /*
     |--------------------------------------------------------------------------
@@ -627,4 +634,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
       unreadCounts: {},
     });
   },
+
+
+  // delete conversation
+
+ deleteConversation: async (conversationId) => {
+  try {
+    set({ deleteLoading: true });
+
+    await deleteConversationService(conversationId);
+
+    set((state) => ({
+      conversations: state.conversations.filter(
+        (conversation) => conversation._id !== conversationId
+      ),
+      activeConversation:
+        state.activeConversation?._id === conversationId
+          ? null
+          : state.activeConversation,
+    }));
+
+    return true;
+  } catch (error) {
+    console.error("Failed to delete conversation:", error);
+    return false;
+  } finally {
+    set({ deleteLoading: false });
+  }
+},
+
 }));

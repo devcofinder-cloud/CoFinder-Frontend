@@ -26,8 +26,10 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
 
   const unreadCounts = useChatStore((state) => state.unreadCounts);
   const fetchUnreadCount = useChatStore((state) => state.fetchUnreadCount);
+  const { deleteConversation, deleteLoading } = useChatStore();
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const conversations = useChatStore((state) => state.conversations);
+  const fetchConversations = useChatStore((state) => state.fetchConversations);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -59,21 +61,14 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
   const userId = user._id || user.id;
 
   useEffect(() => {
-    const loadConversations = async () => {
-      try {
-        setLoading(true);
-        const response = await getConversation();
-        const data = response.data?.data || response.data || [];
-        setConversations(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Failed to fetch conversations:", error);
-      } finally {
-        setLoading(false);
-      }
+    const load = async () => {
+      setLoading(true);
+      await fetchConversations();
+      setLoading(false);
     };
 
-    loadConversations();
-  }, []);
+    load();
+  }, [fetchConversations]);
 
   useEffect(() => {
     if (!conversations.length) return;
@@ -293,168 +288,188 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
           </div>
         )}
       </div>
-     <AnimatePresence>
-  {showOptions && selectedChat && (
-    <>
-      {/* BACKDROP */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={() => setShowOptions(false)}
-        className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[3px]"
-      />
+      <AnimatePresence>
+        {showOptions && selectedChat && (
+          <>
+            {/* BACKDROP */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowOptions(false)}
+              className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[3px]"
+            />
 
-      {/* CENTER MODAL */}
-      <motion.div
-        initial={{
-          opacity: 0,
-          scale: 0,
-        }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-        }}
-        exit={{
-          opacity: 0,
-          scale: 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 420,
-          damping: 28,
-          mass: 0.8,
-        }}
-        className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-32px)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[26px] bg-white p-4 shadow-2xl"
-      >
-        {/* SELECTED CHAT */}
-        <div className="mb-3 flex items-center gap-3 rounded-2xl bg-zinc-50 p-3">
-          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-zinc-900">
-            {(() => {
-              const user = getOtherParticipant(selectedChat);
+            {/* CENTER MODAL */}
+            <motion.div
+              initial={{
+                opacity: 0,
+                scale: 0,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 420,
+                damping: 28,
+                mass: 0.8,
+              }}
+              className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-32px)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[26px] bg-white p-4 shadow-2xl"
+            >
+              {/* SELECTED CHAT */}
+              <div className="mb-3 flex items-center gap-3 rounded-2xl bg-zinc-50 p-3">
+                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-zinc-900">
+                  {(() => {
+                    const user = getOtherParticipant(selectedChat);
 
-              return user?.profileImage || user?.avatar ? (
-                <img
-                  src={user.profileImage || user.avatar}
-                  alt={user.name || "User"}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-white">
-                  {user?.name?.slice(0, 2).toUpperCase() || "U"}
+                    return user?.profileImage || user?.avatar ? (
+                      <img
+                        src={user.profileImage || user.avatar}
+                        alt={user.name || "User"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-white">
+                        {user?.name?.slice(0, 2).toUpperCase() || "U"}
+                      </div>
+                    );
+                  })()}
                 </div>
-              );
-            })()}
-          </div>
 
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-zinc-950">
-              {getOtherParticipant(selectedChat)?.name || "User"}
-            </p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-zinc-950">
+                    {getOtherParticipant(selectedChat)?.name || "User"}
+                  </p>
 
-            <p className="text-xs text-zinc-400">
-              Conversation options
-            </p>
-          </div>
+                  <p className="text-xs text-zinc-400">Conversation options</p>
+                </div>
 
-          <button
-            onClick={() => setShowOptions(false)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition active:scale-90"
-          >
-            <X size={16} />
-          </button>
-        </div>
+                <button
+                  onClick={() => setShowOptions(false)}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500 transition active:scale-90"
+                >
+                  <X size={16} />
+                </button>
+              </div>
 
-        {/* OPTIONS */}
-        <div className="space-y-1">
-          <button
-            onClick={() => {
-              console.log("Pin chat", selectedChat._id);
-              setShowOptions(false);
-            }}
-            className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-zinc-100"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
-              <Pin size={18} className="text-zinc-700" />
-            </div>
+              {/* OPTIONS */}
+              <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    console.log("Pin chat", selectedChat._id);
+                    setShowOptions(false);
+                  }}
+                  className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-zinc-100"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
+                    <Pin size={18} className="text-zinc-700" />
+                  </div>
 
-            <div>
-              <p className="text-sm font-semibold text-zinc-900">
-                Pin chat
-              </p>
-              <p className="text-xs text-zinc-400">
-                Keep this conversation at the top
-              </p>
-            </div>
-          </button>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900">
+                      Pin chat
+                    </p>
+                    <p className="text-xs text-zinc-400">
+                      Keep this conversation at the top
+                    </p>
+                  </div>
+                </button>
 
-          <button
-            onClick={() => {
-              console.log("Mute chat", selectedChat._id);
-              setShowOptions(false);
-            }}
-            className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-zinc-100"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
-              <BellOff size={18} className="text-zinc-700" />
-            </div>
+                <button
+                  onClick={() => {
+                    console.log("Mute chat", selectedChat._id);
+                    setShowOptions(false);
+                  }}
+                  className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-zinc-100"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
+                    <BellOff size={18} className="text-zinc-700" />
+                  </div>
 
-            <div>
-              <p className="text-sm font-semibold text-zinc-900">
-                Mute notifications
-              </p>
-              <p className="text-xs text-zinc-400">
-                Stop notifications for this chat
-              </p>
-            </div>
-          </button>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900">
+                      Mute notifications
+                    </p>
+                    <p className="text-xs text-zinc-400">
+                      Stop notifications for this chat
+                    </p>
+                  </div>
+                </button>
 
-          <button
-            onClick={() => {
-              console.log("Archive chat", selectedChat._id);
-              setShowOptions(false);
-            }}
-            className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-zinc-100"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
-              <Archive size={18} className="text-zinc-700" />
-            </div>
+                <button
+                  onClick={() => {
+                    console.log("Archive chat", selectedChat._id);
+                    setShowOptions(false);
+                  }}
+                  className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-zinc-100"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
+                    <Archive size={18} className="text-zinc-700" />
+                  </div>
 
-            <div>
-              <p className="text-sm font-semibold text-zinc-900">
-                Archive chat
-              </p>
-              <p className="text-xs text-zinc-400">
-                Move this conversation out of your inbox
-              </p>
-            </div>
-          </button>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900">
+                      Archive chat
+                    </p>
+                    <p className="text-xs text-zinc-400">
+                      Move this conversation out of your inbox
+                    </p>
+                  </div>
+                </button>
 
-          <button
-            onClick={() => {
-              console.log("Delete chat", selectedChat._id);
-              setShowOptions(false);
-            }}
-            className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-red-50"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50">
-              <Trash2 size={18} className="text-red-500" />
-            </div>
+                <button
+                  disabled={deleteLoading}
+                  onClick={async () => {
+                    if (!selectedChat?._id || deleteLoading) return;
 
-            <div>
-              <p className="text-sm font-semibold text-red-600">
-                Delete chat
-              </p>
-              <p className="text-xs text-red-400">
-                Remove this conversation
-              </p>
-            </div>
-          </button>
-        </div>
-      </motion.div>
-    </>
-  )}
-</AnimatePresence>
+                    const deleted = await deleteConversation(selectedChat._id);
+
+                    if (deleted) {
+                      setShowOptions(false);
+                      setSelectedChat(null);
+                    }
+                  }}
+                  className="flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-red-50 disabled:pointer-events-none disabled:opacity-60"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50">
+                    {deleteLoading ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 0.8,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                        className="h-[18px] w-[18px] rounded-full border-2 border-red-200 border-t-red-500"
+                      />
+                    ) : (
+                      <Trash2 size={18} className="text-red-500" />
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold text-red-600">
+                      {deleteLoading ? "Deleting..." : "Delete chat"}
+                    </p>
+
+                    <p className="text-xs text-red-400">
+                      {deleteLoading
+                        ? "Removing conversation..."
+                        : "Remove this conversation"}
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </aside>
   );
 }

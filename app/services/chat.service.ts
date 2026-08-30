@@ -129,6 +129,8 @@ export const sendMessage = (data: {
 
   return api.post("/messages/send", formData);
 };
+
+
 /*
 |--------------------------------------------------------------------------
 | GET MESSAGES
@@ -313,3 +315,10 @@ export const getConversationId = (
 ) => {
   return api.get(`/conversations/${id}`);
 };
+
+
+// delete conversation
+
+export const deleteConversation=(id:string)=>{
+  return api.delete(`/conversations/${id}`)
+}

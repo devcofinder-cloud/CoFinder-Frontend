@@ -22,6 +22,8 @@ import { Message } from "@/app/services/chat.service";
 import { useChatStore } from "@/app/store/chatStore";
 import MediaViewer from "./MediaViewer";
 import PdfViewer from "./PdfViewer";
+import ChatOptions from "./ChatOptions";
+import { useRouter } from "next/navigation";
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL;
 
@@ -63,6 +65,8 @@ export default function MessageScreen({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSendingFile, setIsSendingFile] = useState(false);
 
+  const appRouter = useRouter()
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartXRef = useRef<number | null>(null);
@@ -71,6 +75,8 @@ export default function MessageScreen({
   const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const [showChatOptions, setShowChatOptions] = useState<boolean>(false);
 
   const [mediaViewer, setMediaViewer] = useState<{
     url: string;
@@ -596,7 +602,10 @@ export default function MessageScreen({
   };
 
   return (
-    <section className="flex min-w-0 flex-1 flex-col bg-zinc-50">
+    <section
+      className="flex min-w-0 flex-1 flex-col bg-zinc-50"
+      onClick={() => setShowChatOptions(false)}
+    >
       <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           {onBack && (
@@ -623,7 +632,7 @@ export default function MessageScreen({
             )}
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0" onClick={()=>appRouter.push('/chat/messageDetails')}>
             <h2 className="truncate text-sm font-bold text-zinc-950">
               {user?.name || "User"}
             </h2>
@@ -658,17 +667,29 @@ export default function MessageScreen({
 
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
+            className="flex  h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
           >
             <Video size={19} />
           </button>
 
-          <button
+          {/* <button
             type="button"
-            className="hidden h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 sm:flex"
+            onClick={() => setShowChatOptions(true)}
+            className=" flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 sm:flex"
           >
             <MoreVertical size={18} />
-          </button>
+          </button> */}
+          <ChatOptions
+            onClearChat={() => {
+              console.log("chat cleared");
+            }}
+            onBlock={() => {
+              console.log("blocked");
+            }}
+            onReport={() => {
+              console.log("reported this account");
+            }}
+          />
         </div>
       </header>
 

@@ -21,6 +21,7 @@ import { authStore } from "@/app/store/authStore";
 import PersonalProfile from "../comp/Personal";
 import ProfessionalProfile from "../comp/Professional";
 import Posts from "../comp/Posts";
+import { useChatStore } from "@/app/store/chatStore";
 
 type Tab = "personal" | "professional" | "posts";
 
@@ -59,6 +60,11 @@ export default function UserProfilePage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("personal");
 
+
+
+
+  const {createNewConversation} = useChatStore()
+
   useEffect(() => {
     if (!userId) return;
     fetchProfileById(userId);
@@ -76,6 +82,20 @@ export default function UserProfilePage() {
   const experience = professionalProfile?.experience || [];
   const projects = professionalProfile?.projects || [];
   const education = professionalProfile?.education || [];
+
+  const handelSendMessage =async ()=>{
+    try {
+      const res = await createNewConversation(userId)
+      console.log("convo created:", res)
+
+      router.push(`/chat/${res?._id}`)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+
+
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-zinc-950">
@@ -256,7 +276,9 @@ export default function UserProfilePage() {
         </motion.div>
 
         <div className="bg-white w-full h-14 pt-2">
-          <button className="bg-black text-white text-lg font-semibold w-full h-full rounded-2xl">
+          <button
+          onClick={handelSendMessage}
+          className="bg-black text-white text-lg font-semibold w-full h-full rounded-2xl">
             Send Message
           </button>
 
