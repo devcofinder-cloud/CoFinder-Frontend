@@ -134,6 +134,7 @@ export default function EditProfilePage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropperImage, setCropperImage] = useState("");
+  const [cropperType, setCropperType] = useState<"image" | "avatar">("image");
 
   /*
   |--------------------------------------------------------------------------
@@ -223,12 +224,12 @@ export default function EditProfilePage() {
 
     reader.onload = () => {
       setCropperImage(reader.result as string);
+      setCropperType("image");
       setCropperOpen(true);
     };
 
     reader.readAsDataURL(file);
 
-    // Same file dobara select karne ke liye
     e.target.value = "";
 
     setSaved(false);
@@ -238,6 +239,7 @@ export default function EditProfilePage() {
     setSelectedImage(file);
     setProfilePreview(preview);
 
+    // Cropper se nikli image ab uploaded image hai
     setImageType("image");
     setSelectedAvatar("");
 
@@ -264,35 +266,11 @@ export default function EditProfilePage() {
   */
 
   const handleSelectAvatar = (avatarUrl: string) => {
-    /*
-     * Avatar type
-     */
-
-    setImageType("avatar");
-
-    /*
-     * Save avatar URL
-     */
-
-    setSelectedAvatar(avatarUrl);
-
-    /*
-     * Clear uploaded image
-     */
-
-    setSelectedImage(null);
-
-    /*
-     * Show avatar preview
-     */
-
-    setProfilePreview(avatarUrl);
-
-    /*
-     * Close modal
-     */
-
     setAvatarModal(false);
+
+    setCropperImage(avatarUrl);
+    setCropperType("avatar");
+    setCropperOpen(true);
 
     setSaved(false);
   };
