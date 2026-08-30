@@ -25,6 +25,7 @@ import avatar6 from "@/public/avatars/peep-8.png";
 import avatar7 from "@/public/avatars/peep-96.png";
 import avatar8 from "@/public/avatars/peep-99 (1).png";
 import avatar9 from "@/public/avatars/peep-99.png";
+import ImageCropper from "./comp/ImageCropper";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -131,6 +132,8 @@ export default function EditProfilePage() {
   const [profilePreview, setProfilePreview] = useState("");
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImage, setCropperImage] = useState("");
 
   /*
   |--------------------------------------------------------------------------
@@ -211,44 +214,35 @@ export default function EditProfilePage() {
 
     if (!file) return;
 
-    /*
-     * Validate image
-     */
-
     if (!file.type.startsWith("image/")) {
       console.error("Please select a valid image");
       return;
     }
 
-    /*
-     * Switch to normal image
-     */
-
-    setImageType("image");
-
-    /*
-     * Clear selected avatar
-     */
-
-    setSelectedAvatar("");
-
-    /*
-     * Store file
-     */
-
-    setSelectedImage(file);
-
-    /*
-     * Preview
-     */
-
     const reader = new FileReader();
 
-    reader.onloadend = () => {
-      setProfilePreview(reader.result as string);
+    reader.onload = () => {
+      setCropperImage(reader.result as string);
+      setCropperOpen(true);
     };
 
     reader.readAsDataURL(file);
+
+    // Same file dobara select karne ke liye
+    e.target.value = "";
+
+    setSaved(false);
+  };
+
+  const handleCroppedImage = (file: File, preview: string) => {
+    setSelectedImage(file);
+    setProfilePreview(preview);
+
+    setImageType("image");
+    setSelectedAvatar("");
+
+    setCropperOpen(false);
+    setCropperImage("");
 
     setSaved(false);
   };
@@ -503,7 +497,7 @@ export default function EditProfilePage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-full border-4 border-white bg-black text-white shadow-lg transition hover:scale-105"
+                    className="absolute -bottom-2 right-1 flex h-10 w-10 items-center justify-center rounded-full border-4 border-white bg-black text-white shadow-lg transition hover:scale-105"
                   >
                     <Camera className="h-4 w-4" />
                   </button>
@@ -911,6 +905,18 @@ export default function EditProfilePage() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {cropperOpen && cropperImage && (
+          <ImageCropper
+            image={cropperImage}
+            onCancel={() => {
+              setCropperOpen(false);
+              setCropperImage("");
+            }}
+            onCropComplete={handleCroppedImage}
+          />
         )}
       </AnimatePresence>
     </main>
