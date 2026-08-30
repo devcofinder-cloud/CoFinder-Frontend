@@ -45,6 +45,8 @@ export interface User {
     _id: string;
     name: string;
     username: string;
+    email:string;
+    provider:string;
     displayName: string;
     profileImage: string | null;
     location: string;
