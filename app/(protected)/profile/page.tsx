@@ -115,12 +115,7 @@ const initialIdeas = [
   },
 ];
 
-const links = [
-  { icon: FaTwitter, label: "X", href: "#" },
-  { icon: FaGithub, label: "GitHub", href: "#" },
-  { icon: FaLinkedin, label: "LinkedIn", href: "#" },
-  { icon: FaDiscord, label: "Website", href: "#" },
-];
+
 
 /* ------------------------------------------------------------------ */
 /* Main Component                                                     */
@@ -146,13 +141,23 @@ export default function ProfilePage() {
 
  
 
-  const { user, loading, fetchProfile } = authStore();
+  const { user, loading, fetchProfile, fetchProfessionalProfile, professionalProfile, professionalProfileLoading } = authStore();
+
 
 
 
   useEffect(() => {
     fetchProfile();
+    fetchProfessionalProfile()
   }, []);
+
+
+  const links = [
+  { icon: FaTwitter, label: "X", href: professionalProfile?.socialLinks?.twitter },
+  { icon: FaGithub, label: "GitHub", href: professionalProfile?.socialLinks?.github },
+  { icon: FaLinkedin, label: "LinkedIn", href: professionalProfile?.socialLinks?.linkedin },
+  { icon: FaDiscord, label: "Website", href: professionalProfile?.socialLinks?.portfolio },
+];
 
 
   const handleEditProfile = () => {
@@ -371,17 +376,6 @@ export default function ProfilePage() {
                   {user.email}
                 </p>
               )}
-
-              {/* User Meta */}
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                <span className="rounded-full bg-neutral-200 px-4 py-1.5 text-xs font-semibold text-neutral-700">
-                  {user?.role || "Member"}
-                </span>
-
-                <span className="rounded-full bg-neutral-200 px-4 py-1.5 text-xs font-semibold text-neutral-700">
-                  {user?.provider || "Email"}
-                </span>
-              </div>
 
               {/* Completion */}
               <div className="mt-5">

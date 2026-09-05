@@ -10,7 +10,11 @@ import {
   BellOff,
   Archive,
   X,
+  Bell,
+  Check,
+  CheckCheck,
 } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 
@@ -22,6 +26,11 @@ interface ChatListProps {
 }
 
 export default function ChatList({ activeConversationId }: ChatListProps) {
+ 
+
+
+
+  const [showNotifications, setShowNotifications] = useState(false);
   const router = useRouter();
 
   const unreadCounts = useChatStore((state) => state.unreadCounts);
@@ -119,7 +128,7 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
   });
 
   return (
-    <aside className="flex h-full w-full shrink-0 flex-col border-r border-zinc-200 bg-white md:w-[340px] lg:w-[380px]">
+    <aside className="relative flex h-full w-full shrink-0 flex-col border-r border-zinc-200 bg-white md:w-[340px] lg:w-[380px]">
       {/* HEADER */}
       <div className="shrink-0 border-b border-zinc-200 px-5 py-5">
         <div className="mb-4 flex items-center justify-between">
@@ -127,18 +136,68 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
             <h1 className="text-xl font-bold tracking-tight text-zinc-950">
               Messages
             </h1>
+
             <p className="mt-0.5 text-xs text-zinc-500">
               Stay connected with your people
             </p>
           </div>
 
-          <button
-            aria-label="More options"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 text-zinc-500 transition hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
-          >
-            <MoreVertical size={17} />
-          </button>
+        
         </div>
+        <AnimatePresence>
+          {showNotifications && (
+            <>
+              {/* OUTSIDE CLICK */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowNotifications(false)}
+                className="fixed inset-0 z-30"
+              />
+
+              {/* NOTIFICATION PANEL */}
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: -8,
+                  scale: 0.97,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  scale: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: -8,
+                  scale: 0.97,
+                }}
+                transition={{
+                  duration: 0.16,
+                }}
+                className="absolute left-4 right-4 top-[82px] z-40 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl md:left-auto md:right-5 md:w-[360px]"
+              >
+                {/* HEADER */}
+                <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
+                  <div>
+                    <h2 className="text-sm font-bold text-zinc-950">
+                      Notifications
+                    </h2>
+
+                    
+                  </div>
+
+        
+                
+                </div>
+
+      
+              
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* SEARCH */}
         <div className="relative">
@@ -280,6 +339,8 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
                           No messages yet
                         </span>
                       )}
+
+                      {}
                     </p>
                   </div>
                 </button>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
@@ -25,18 +26,12 @@ import avatar6 from "@/public/avatars/peep-8.png";
 import avatar7 from "@/public/avatars/peep-96.png";
 import avatar8 from "@/public/avatars/peep-99 (1).png";
 import avatar9 from "@/public/avatars/peep-99.png";
+
 import ImageCropper from "./comp/ImageCropper";
 
 export default function EditProfilePage() {
   const router = useRouter();
-
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  /*
-  |--------------------------------------------------------------------------
-  | STORE
-  |--------------------------------------------------------------------------
-  */
 
   const {
     user,
@@ -48,75 +43,31 @@ export default function EditProfilePage() {
     updatingProfessionalProfile,
   } = authStore();
 
-  /*
-  |--------------------------------------------------------------------------
-  | AVATARS
-  |--------------------------------------------------------------------------
-  */
-
   const avatarArray = [
-    {
-      id: "avatar-1",
-      src: avatar1,
-      url: "/avatars/peep-15.png",
-    },
-    {
-      id: "avatar-2",
-      src: avatar2,
-      url: "/avatars/peep-22.png",
-    },
-    {
-      id: "avatar-3",
-      src: avatar3,
-      url: "/avatars/peep-29.png",
-    },
-    {
-      id: "avatar-4",
-      src: avatar4,
-      url: "/avatars/peep-43.png",
-    },
-    {
-      id: "avatar-5",
-      src: avatar5,
-      url: "/avatars/peep-52.png",
-    },
-    {
-      id: "avatar-6",
-      src: avatar6,
-      url: "/avatars/peep-8.png",
-    },
-    {
-      id: "avatar-7",
-      src: avatar7,
-      url: "/avatars/peep-96.png",
-    },
-    {
-      id: "avatar-8",
-      src: avatar8,
-      url: "/avatars/peep-99 (1).png",
-    },
-    {
-      id: "avatar-9",
-      src: avatar9,
-      url: "/avatars/peep-99.png",
-    },
+    { id: "avatar-1", src: avatar1, url: "/avatars/peep-15.png" },
+    { id: "avatar-2", src: avatar2, url: "/avatars/peep-22.png" },
+    { id: "avatar-3", src: avatar3, url: "/avatars/peep-29.png" },
+    { id: "avatar-4", src: avatar4, url: "/avatars/peep-43.png" },
+    { id: "avatar-5", src: avatar5, url: "/avatars/peep-52.png" },
+    { id: "avatar-6", src: avatar6, url: "/avatars/peep-8.png" },
+    { id: "avatar-7", src: avatar7, url: "/avatars/peep-96.png" },
+    { id: "avatar-8", src: avatar8, url: "/avatars/peep-99 (1).png" },
+    { id: "avatar-9", src: avatar9, url: "/avatars/peep-99.png" },
   ];
 
-  /*
-  |--------------------------------------------------------------------------
-  | STATE
-  |--------------------------------------------------------------------------
-  */
-
   const [imageType, setImageType] = useState<"image" | "avatar">("image");
-
   const [avatarModal, setAvatarModal] = useState(false);
-
   const [selectedAvatar, setSelectedAvatar] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
-
   const [saved, setSaved] = useState(false);
+
+  const [profilePreview, setProfilePreview] = useState("");
+
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImage, setCropperImage] = useState("");
+  const [cropperType, setCropperType] = useState<"image"| "avatar">("image");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -129,28 +80,9 @@ export default function EditProfilePage() {
     twitter: "",
   });
 
-  const [profilePreview, setProfilePreview] = useState("");
-
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [cropperOpen, setCropperOpen] = useState(false);
-  const [cropperImage, setCropperImage] = useState("");
-  const [cropperType, setCropperType] = useState<"image" | "avatar">("image");
-
-  /*
-  |--------------------------------------------------------------------------
-  | FETCH PROFILE
-  |--------------------------------------------------------------------------
-  */
-
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
-
-  /*
-  |--------------------------------------------------------------------------
-  | FILL FORM
-  |--------------------------------------------------------------------------
-  */
 
   useEffect(() => {
     if (!user) return;
@@ -168,26 +100,16 @@ export default function EditProfilePage() {
 
     setProfilePreview(user.profileImage || "");
 
-    /*
-     * Existing image type
-     */
-
     if (user.profileImageType === "avatar") {
       setImageType("avatar");
       setSelectedAvatar(user.profileImage || "");
+      setSelectedImage(null);
     } else {
       setImageType("image");
       setSelectedAvatar("");
+      setSelectedImage(null);
     }
-
-    setSelectedImage(null);
   }, [user]);
-
-  /*
-  |--------------------------------------------------------------------------
-  | INPUT CHANGE
-  |--------------------------------------------------------------------------
-  */
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -204,83 +126,55 @@ export default function EditProfilePage() {
     setSaved(false);
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | IMAGE UPLOAD
-  |--------------------------------------------------------------------------
-  */
+ const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  if (!file) return;
 
-    if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    console.error("Please select a valid image");
+    return;
+  }
 
-    if (!file.type.startsWith("image/")) {
-      console.error("Please select a valid image");
-      return;
-    }
+  const reader = new FileReader();
 
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      setCropperImage(reader.result as string);
-      setCropperType("image");
-      setCropperOpen(true);
-    };
-
-    reader.readAsDataURL(file);
-
-    e.target.value = "";
-
-    setSaved(false);
-  };
-
-  const handleCroppedImage = (file: File, preview: string) => {
-    setSelectedImage(file);
-    setProfilePreview(preview);
-
-    // Cropper se nikli image ab uploaded image hai
-    setImageType("image");
-    setSelectedAvatar("");
-
-    setCropperOpen(false);
-    setCropperImage("");
-
-    setSaved(false);
-  };
-
-  /*
-  |--------------------------------------------------------------------------
-  | OPEN AVATAR MODAL
-  |--------------------------------------------------------------------------
-  */
-
-  const handleAvatar = () => {
-    setAvatarModal(true);
-  };
-
-  /*
-  |--------------------------------------------------------------------------
-  | SELECT AVATAR
-  |--------------------------------------------------------------------------
-  */
-
-  const handleSelectAvatar = (avatarUrl: string) => {
-    setAvatarModal(false);
-
-    setCropperImage(avatarUrl);
-    setCropperType("avatar");
+  reader.onload = () => {
+    setCropperType("image");
+    setCropperImage(reader.result as string);
     setCropperOpen(true);
-
-    setSaved(false);
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | SAVE
-  |--------------------------------------------------------------------------
-  */
+  reader.readAsDataURL(file);
 
+  e.target.value = "";
+  setSaved(false);
+};
+
+const handleSelectAvatar = (avatar: (typeof avatarArray)[number]) => {
+  setSelectedAvatar(avatar.url);
+  setCropperType("avatar");
+  setCropperImage(avatar.src.src);
+  setCropperOpen(true);
+  setAvatarModal(false);
+  setSaved(false);
+};
+
+const handleCroppedImage = (file: File, preview: string) => {
+  setProfilePreview(preview);
+
+  if (cropperType === "avatar") {
+    setImageType("avatar");
+    setSelectedImage(null);
+  } else {
+    setImageType("image");
+    setSelectedImage(file);
+    setSelectedAvatar("");
+  }
+
+  setCropperOpen(false);
+  setCropperImage("");
+  setSaved(false);
+};
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -288,85 +182,50 @@ export default function EditProfilePage() {
       setIsSaving(true);
       setSaved(false);
 
-      /*
-      |--------------------------------------------------------------------------
-      | PROFILE PAYLOAD
-      |--------------------------------------------------------------------------
-      */
-
       if (imageType === "avatar") {
-        /*
-         * Avatar selected
-         *
-         * NO FILE
-         * NO CLOUDINARY
-         */
-
         if (!selectedAvatar) {
-          console.error("Please select an avatar");
+          console.error("No avatar selected");
           return;
         }
 
         await updateProfile({
           name: formData.name,
-
           profileImage: selectedAvatar,
-
           profileImageType: "avatar",
         });
       } else {
-        /*
-         * Normal image
-         */
-
-        const profilePayload: {
-          name?: string;
+        const payload: {
+          name: string;
+          profileImageType: "image";
           profileImage?: File;
-          profileImageType?: "image";
         } = {
           name: formData.name,
-
           profileImageType: "image",
         };
 
-        /*
-         * Only send file if user selected a new image
-         */
-
         if (selectedImage) {
-          profilePayload.profileImage = selectedImage;
+          payload.profileImage = selectedImage;
         }
 
-        await updateProfile(profilePayload);
+        await updateProfile(payload);
       }
 
-      /*
-      |--------------------------------------------------------------------------
-      | PROFESSIONAL PROFILE
-      |--------------------------------------------------------------------------
-      */
+      try {
+        await updateProfessionalProfile({
+          currentRole: formData.role,
+          about: formData.bio,
+          socialLinks: {
+            portfolio: formData.website,
+            github: formData.github,
+            linkedin: formData.linkedin,
+            twitter: formData.twitter,
+          },
+        });
+      } catch (error) {
+        console.error("Professional profile update failed:", error);
+      }
 
-      await updateProfessionalProfile({
-        currentRole: formData.role,
-
-        about: formData.bio,
-
-        socialLinks: {
-          portfolio: formData.website,
-
-          github: formData.github,
-
-          linkedin: formData.linkedin,
-
-          twitter: formData.twitter,
-        },
-      });
-
-      /*
-      |--------------------------------------------------------------------------
-      | SUCCESS
-      |--------------------------------------------------------------------------
-      */
+      await fetchProfile();
 
       setSaved(true);
 
@@ -380,18 +239,11 @@ export default function EditProfilePage() {
     }
   };
 
-  /*
-  |--------------------------------------------------------------------------
-  | LOADING
-  |--------------------------------------------------------------------------
-  */
-
   if (loading && !user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-black border-t-transparent" />
-
           <p className="text-sm font-medium text-neutral-500">
             Loading profile...
           </p>
@@ -400,17 +252,9 @@ export default function EditProfilePage() {
     );
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | UI
-  |--------------------------------------------------------------------------
-  */
-
   return (
     <main className="min-h-screen bg-white px-4 py-6 text-black sm:px-6 sm:py-10">
       <div className="mx-auto max-w-5xl">
-        {/* HEADER */}
-
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -433,26 +277,14 @@ export default function EditProfilePage() {
           </div>
         </div>
 
-        {/* FORM */}
-
         <form onSubmit={handleSave}>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
-            {/* LEFT PROFILE CARD */}
-
             <motion.div
-              initial={{
-                opacity: 0,
-                y: 15,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
               className="h-fit rounded-3xl border border-black/10 bg-white p-6 shadow-sm"
             >
               <div className="flex flex-col items-center">
-                {/* PROFILE IMAGE */}
-
                 <div className="relative">
                   <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border border-black/10 bg-neutral-100 text-4xl">
                     {profilePreview ? (
@@ -469,8 +301,6 @@ export default function EditProfilePage() {
                       </span>
                     )}
                   </div>
-
-                  {/* CAMERA */}
 
                   <button
                     type="button"
@@ -489,8 +319,6 @@ export default function EditProfilePage() {
                   />
                 </div>
 
-                {/* IMAGE TYPE */}
-
                 <div className="mt-4 flex items-center gap-2">
                   <span
                     className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wide ${
@@ -503,21 +331,15 @@ export default function EditProfilePage() {
                   </span>
                 </div>
 
-                {/* OR */}
-
                 <p className="pt-4 font-semibold text-gray-600">Or</p>
-
-                {/* CHOOSE AVATAR */}
 
                 <button
                   type="button"
-                  onClick={handleAvatar}
+                  onClick={() => setAvatarModal(true)}
                   className="mt-2 rounded-full bg-black px-4 py-2 font-semibold text-white transition hover:bg-neutral-800"
                 >
                   Choose Avatar
                 </button>
-
-                {/* NAME */}
 
                 <h2 className="mt-5 text-lg font-bold">
                   {formData.name || "Your Name"}
@@ -526,8 +348,6 @@ export default function EditProfilePage() {
                 <p className="mt-1 text-xs text-neutral-500">
                   {formData.role || "Your Role"}
                 </p>
-
-                {/* COMPLETION */}
 
                 <div className="mt-6 w-full rounded-2xl bg-neutral-100 p-4">
                   <div className="flex items-center justify-between">
@@ -542,15 +362,11 @@ export default function EditProfilePage() {
 
                   <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
                     <motion.div
-                      initial={{
-                        width: 0,
-                      }}
+                      initial={{ width: 0 }}
                       animate={{
                         width: `${user?.completionStatus || 0}%`,
                       }}
-                      transition={{
-                        duration: 0.8,
-                      }}
+                      transition={{ duration: 0.8 }}
                       className="h-full rounded-full bg-black"
                     />
                   </div>
@@ -563,23 +379,11 @@ export default function EditProfilePage() {
               </div>
             </motion.div>
 
-            {/* RIGHT CONTENT */}
-
             <div className="space-y-6">
-              {/* BASIC INFORMATION */}
-
               <motion.section
-                initial={{
-                  opacity: 0,
-                  y: 15,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  delay: 0.05,
-                }}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
                 className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8"
               >
                 <div className="mb-6">
@@ -620,21 +424,15 @@ export default function EditProfilePage() {
                       className="w-full rounded-2xl border border-black/10 bg-neutral-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-black focus:bg-white"
                     >
                       <option value="">Select your role</option>
-
                       <option value="Founder">Founder</option>
-
                       <option value="Co-Founder">Co-Founder</option>
-
                       <option value="Developer">Developer</option>
-
                       <option value="Designer">Designer</option>
-
-                      <option value="Product Manager">Product Manager</option>
-
+                      <option value="Product Manager">
+                        Product Manager
+                      </option>
                       <option value="Marketing">Marketing</option>
-
                       <option value="Sales">Sales</option>
-
                       <option value="Other">Other</option>
                     </select>
                   </div>
@@ -663,20 +461,10 @@ export default function EditProfilePage() {
                 </div>
               </motion.section>
 
-              {/* SOCIAL LINKS */}
-
               <motion.section
-                initial={{
-                  opacity: 0,
-                  y: 15,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  delay: 0.1,
-                }}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
                 className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm sm:p-8"
               >
                 <div className="mb-6">
@@ -726,8 +514,6 @@ export default function EditProfilePage() {
                 </div>
               </motion.section>
 
-              {/* ACTIONS */}
-
               <div className="sticky bottom-4 z-20 rounded-3xl border border-black/10 bg-white/95 p-3 shadow-xl backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
                 <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                   <button
@@ -741,7 +527,9 @@ export default function EditProfilePage() {
                   <button
                     type="submit"
                     disabled={
-                      isSaving || updatingProfile || updatingProfessionalProfile
+                      isSaving ||
+                      updatingProfile ||
+                      updatingProfessionalProfile
                     }
                     className="flex items-center justify-center gap-2 rounded-full bg-black px-7 py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -769,22 +557,12 @@ export default function EditProfilePage() {
         </form>
       </div>
 
-      {/* ============================================================
-          AVATAR MODAL
-      ============================================================ */}
-
       <AnimatePresence>
         {avatarModal && (
           <motion.div
-            initial={{
-              opacity: 0,
-            }}
-            animate={{
-              opacity: 1,
-            }}
-            exit={{
-              opacity: 0,
-            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
             onMouseDown={(e) => {
               if (e.target === e.currentTarget) {
@@ -793,29 +571,13 @@ export default function EditProfilePage() {
             }}
           >
             <motion.div
-              initial={{
-                opacity: 0,
-                scale: 0.95,
-                y: 10,
-              }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-                y: 0,
-              }}
-              exit={{
-                opacity: 0,
-                scale: 0.95,
-                y: 10,
-              }}
-              transition={{
-                duration: 0.2,
-              }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
               className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
               onMouseDown={(e) => e.stopPropagation()}
             >
-              {/* MODAL HEADER */}
-
               <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 sm:px-6">
                 <div>
                   <h3 className="text-lg font-bold text-black">
@@ -836,8 +598,6 @@ export default function EditProfilePage() {
                 </button>
               </div>
 
-              {/* AVATAR GRID */}
-
               <div className="grid grid-cols-3 gap-4 p-5 sm:grid-cols-4 sm:p-6">
                 {avatarArray.map((avatar) => {
                   const isSelected =
@@ -847,7 +607,7 @@ export default function EditProfilePage() {
                     <button
                       key={avatar.id}
                       type="button"
-                      onClick={() => handleSelectAvatar(avatar.url)}
+                      onClick={() => handleSelectAvatar(avatar)}
                       className={`group relative aspect-square overflow-hidden rounded-2xl border-2 bg-neutral-50 transition ${
                         isSelected
                           ? "border-black"
@@ -870,8 +630,6 @@ export default function EditProfilePage() {
                 })}
               </div>
 
-              {/* MODAL FOOTER */}
-
               <div className="border-t border-neutral-100 bg-neutral-50 px-5 py-4 sm:px-6">
                 <button
                   type="button"
@@ -885,6 +643,7 @@ export default function EditProfilePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
       <AnimatePresence>
         {cropperOpen && cropperImage && (
           <ImageCropper
@@ -900,12 +659,6 @@ export default function EditProfilePage() {
     </main>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| INPUT FIELD
-|--------------------------------------------------------------------------
-*/
 
 function InputField({
   label,
@@ -943,12 +696,6 @@ function InputField({
     </div>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| SOCIAL INPUT
-|--------------------------------------------------------------------------
-*/
 
 function SocialInput({
   icon,
@@ -992,3 +739,4 @@ function SocialInput({
     </div>
   );
 }
+

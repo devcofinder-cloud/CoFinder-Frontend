@@ -1,3 +1,4 @@
+
 import api from "@/app/lib/axios";
 
 export interface LoginPayload {
@@ -21,19 +22,16 @@ export interface RegisterPayload {
 export interface ProfessionalProfile {
   _id: string;
   user: string;
-
   headline?: string;
   about?: string;
   currentRole?: string;
   currentCompany?: string;
   industry?: string;
   experienceLevel?: string;
-
   skills?: {
     name: string;
     level: string;
   }[];
-
   experience?: {
     company: string;
     role: string;
@@ -42,7 +40,6 @@ export interface ProfessionalProfile {
     endDate?: string;
     description: string;
   }[];
-
   education?: {
     institution: string;
     degree: string;
@@ -51,7 +48,6 @@ export interface ProfessionalProfile {
     endDate?: string;
     description: string;
   }[];
-
   projects?: {
     title: string;
     description: string;
@@ -59,7 +55,6 @@ export interface ProfessionalProfile {
     projectUrl?: string;
     githubUrl?: string;
   }[];
-
   certifications?: {
     name: string;
     issuingOrganization: string;
@@ -67,14 +62,12 @@ export interface ProfessionalProfile {
     credentialId?: string;
     credentialUrl?: string;
   }[];
-
   socialLinks?: {
     linkedin?: string;
     github?: string;
     portfolio?: string;
     twitter?: string;
   };
-
   createdAt?: string;
   updatedAt?: string;
 }
@@ -86,7 +79,6 @@ export interface UpdatePayload {
   location?: string;
   age?: number;
   gender?: string;
-
   profileImage?: File | string;
   profileImageType?: "avatar" | "image";
 }
@@ -98,12 +90,10 @@ export interface UpdateProfessionalProfilePayload {
   currentCompany?: string;
   industry?: string;
   experienceLevel?: string;
-
   skills?: {
     name: string;
     level: string;
   }[];
-
   experience?: {
     company: string;
     role: string;
@@ -112,7 +102,6 @@ export interface UpdateProfessionalProfilePayload {
     endDate?: string;
     description: string;
   }[];
-
   education?: {
     institution: string;
     degree: string;
@@ -121,7 +110,6 @@ export interface UpdateProfessionalProfilePayload {
     endDate?: string;
     description: string;
   }[];
-
   projects?: {
     title: string;
     description: string;
@@ -129,7 +117,6 @@ export interface UpdateProfessionalProfilePayload {
     projectUrl?: string;
     githubUrl?: string;
   }[];
-
   certifications?: {
     name: string;
     issuingOrganization: string;
@@ -137,7 +124,6 @@ export interface UpdateProfessionalProfilePayload {
     credentialId?: string;
     credentialUrl?: string;
   }[];
-
   socialLinks?: {
     linkedin?: string;
     github?: string;
@@ -188,8 +174,16 @@ export const editProfile = async (data: UpdatePayload) => {
     formData.append("gender", data.gender);
   }
 
-  if (data.profileImage) {
-    formData.append("profileImage", data.profileImage);
+  if (data.profileImage !== undefined) {
+    if (data.profileImage instanceof File) {
+      formData.append("profileImage", data.profileImage);
+    } else {
+      formData.append("profileImage", data.profileImage);
+    }
+  }
+
+  if (data.profileImageType !== undefined) {
+    formData.append("profileImageType", data.profileImageType);
   }
 
   const response = await api.put(
@@ -200,13 +194,20 @@ export const editProfile = async (data: UpdatePayload) => {
   return response.data;
 };
 
+export const getProfessionalProfile = (userId: string) => {
+  return api.get("/professional", {
+    params: {
+      userId,
+    },
+  });
+};
 
-
-export const getProfessionalProfile = ()=>{
-  return api.get('/professional')
-}
-
-
-export const updateProfessionalProfile= (data:UpdateProfessionalProfilePayload)=>{
-  return api.put('/professional', data)
-}
+export const updateProfessionalProfile = (
+  userId: string,
+  data: UpdateProfessionalProfilePayload,
+) => {
+  return api.put("/professional", {
+    userId,
+    ...data,
+  });
+};

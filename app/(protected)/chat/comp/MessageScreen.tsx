@@ -46,7 +46,12 @@ export default function MessageScreen({
     addMessage,
     editExistingMessage,
     deleteExistingMessage,
+    markMessageAsDeleted,
+    clearConversationMessages,
+    removeMessage,
   } = useChatStore();
+
+ 
 
   const [message, setMessage] = useState("");
   const [typing, setTyping] = useState(false);
@@ -65,7 +70,7 @@ export default function MessageScreen({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSendingFile, setIsSendingFile] = useState(false);
 
-  const appRouter = useRouter()
+  const appRouter = useRouter();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -213,6 +218,10 @@ export default function MessageScreen({
         setTyping(false);
       }
     });
+    socket.on("notification", (notification) => {
+  console.log("🔔 NOTIFICATION RECEIVED:", notification);
+
+});
 
     socket.on(
       "user_typing",
@@ -274,6 +283,33 @@ export default function MessageScreen({
       editExistingMessage(String(messageId), content);
     });
 
+    socket.on("message_deleted", (deletedMessage) => {
+      const incomingConversationId =
+        typeof deletedMessage === "object" && deletedMessage
+          ? deletedMessage.conversationId ||
+            deletedMessage.conversation?._id ||
+            deletedMessage.conversation
+          : null;
+
+      if (
+        incomingConversationId &&
+        String(incomingConversationId) !== String(conversationId)
+      ) {
+        return;
+      }
+
+      const messageId =
+        typeof deletedMessage === "string"
+          ? deletedMessage
+          : deletedMessage?._id ||
+            deletedMessage?.messageId ||
+            deletedMessage?.id;
+
+      if (!messageId) return;
+
+      markMessageAsDeleted(String(messageId));
+      setSelectedMessage(null);
+    });
     socket.on(
       "message_error",
       (error: { success?: boolean; message?: string }) => {
@@ -301,7 +337,13 @@ export default function MessageScreen({
       setSocketConnected(false);
       setTyping(false);
     };
-  }, [conversationId, currentUserId, addMessage, editExistingMessage]);
+  }, [
+    conversationId,
+    currentUserId,
+    addMessage,
+    editExistingMessage,
+    markMessageAsDeleted,
+  ]);
 
   const handleReply = (msg: Message) => {
     setReplyingTo(msg);
@@ -632,7 +674,10 @@ export default function MessageScreen({
             )}
           </div>
 
-          <div className="min-w-0" onClick={()=>appRouter.push('/chat/messageDetails')}>
+          <div
+            className="min-w-0"
+            onClick={() => appRouter.push("/chat/messageDetails")}
+          >
             <h2 className="truncate text-sm font-bold text-zinc-950">
               {user?.name || "User"}
             </h2>
@@ -680,8 +725,10 @@ export default function MessageScreen({
             <MoreVertical size={18} />
           </button> */}
           <ChatOptions
-            onClearChat={() => {
-              console.log("chat cleared");
+            onClearChat={async () => {
+              if (conversationId) {
+                await clearConversationMessages(conversationId);
+              }
             }}
             onBlock={() => {
               console.log("blocked");
@@ -715,7 +762,7 @@ export default function MessageScreen({
                 Loading your chats...
               </p>
             </div>
-          ) : messages.length === 0 ? (
+          ) : messages.filter((msg) => !msg.isDeleted).length === 0 ? (
             <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
                 <Send size={18} className="text-zinc-400" />
@@ -730,7 +777,9 @@ export default function MessageScreen({
               </p>
             </div>
           ) : (
-            messages.map((msg) => {
+            messages
+              .filter((msg) => !msg.isDeleted)
+              .map((msg) => {
               const isMe = String(msg.senderId) === String(currentUserId);
 
               const replyTo = (
@@ -773,17 +822,29 @@ export default function MessageScreen({
                         </button>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          deleteExistingMessage(msg._id);
-                          setSelectedMessage(null);
-                        }}
-                        className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-red-600 transition hover:bg-red-50"
-                      >
-                        <Trash2 size={14} />
-                        <span>Delete</span>
-                      </button>
+                      {!msg.isDeleted && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const msgId = String(msg._id);
+                            const socket = socketRef.current;
+
+                            if (socket && socket.connected) {
+                              socket.emit("delete_message", {
+                                messageId: msgId,
+                                conversationId: String(conversationId),
+                              });
+                            }
+
+                            await deleteExistingMessage(msgId);
+                            setSelectedMessage(null);
+                          }}
+                          className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                        >
+                          <Trash2 size={14} />
+                          <span>Delete</span>
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -843,133 +904,152 @@ export default function MessageScreen({
                       </div>
                     )}
 
-                    {msg.attachment && (
-                      <div className="mb-2">
-                        {msg.messageType === "image" ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                    {msg.isDeleted ? (
+                      <div
+                        className={`flex items-center gap-2 ${
+                          isMe ? "text-zinc-400" : "text-zinc-500"
+                        }`}
+                      >
+                        <Trash2 size={14} className="shrink-0" />
 
-                              setMediaViewer({
-                                url: msg.attachment!.url,
-                                type: "image",
-                                name: msg.attachment!.name,
-                              });
-                            }}
-                            className="block overflow-hidden rounded-xl"
-                          >
-                            <img
-                              src={msg.attachment.url}
-                              alt={msg.attachment.name || "Image"}
-                              className="max-h-72 max-w-full rounded-xl object-cover transition duration-200 active:scale-[0.98]"
-                            />
-                          </button>
-                        ) : msg.messageType === "video" ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              setMediaViewer({
-                                url: msg.attachment!.url,
-                                type: "video",
-                                name: msg.attachment!.name,
-                              });
-                            }}
-                            className="block overflow-hidden rounded-xl"
-                          >
-                            <video
-                              src={msg.attachment.url}
-                              muted
-                              playsInline
-                              className="max-h-72 max-w-full rounded-xl object-cover"
-                            />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              if (
-                                msg.attachment!.type === "application/pdf" ||
-                                msg
-                                  .attachment!.name?.toLowerCase()
-                                  .endsWith(".pdf")
-                              ) {
-                                setPdfViewer({
-                                  url: msg.attachment!.url,
-                                  name: msg.attachment!.name,
-                                });
-
-                                return;
-                              }
-
-                              window.open(
-                                msg.attachment!.url,
-                                "_blank",
-                                "noopener,noreferrer",
-                              );
-                            }}
-                            className={`flex min-w-[220px] max-w-[300px] items-center gap-3 rounded-xl p-3 text-left transition ${
-                              isMe
-                                ? "bg-zinc-800 hover:bg-zinc-700"
-                                : "bg-zinc-100 hover:bg-zinc-200"
-                            }`}
-                          >
-                            <div
-                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                                isMe ? "bg-zinc-700" : "bg-white"
-                              }`}
-                            >
-                              <FileText
-                                size={19}
-                                className={
-                                  isMe ? "text-white" : "text-zinc-700"
-                                }
-                              />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <p
-                                className={`truncate text-xs font-semibold ${
-                                  isMe ? "text-white" : "text-zinc-900"
-                                }`}
-                              >
-                                {msg.attachment.name}
-                              </p>
-
-                              <p
-                                className={`mt-0.5 text-[10px] ${
-                                  isMe ? "text-zinc-400" : "text-zinc-500"
-                                }`}
-                              >
-                                {msg.attachment.type
-                                  ?.split("/")?.[1]
-                                  ?.toUpperCase() || "FILE"}
-                                {" • "}
-                                {(msg.attachment.size / 1024 / 1024).toFixed(
-                                  2,
-                                )}{" "}
-                                MB
-                              </p>
-                            </div>
-                          </button>
-                        )}
+                        <p className="text-sm italic">
+                          This message has been deleted
+                        </p>
                       </div>
-                    )}
+                    ) : (
+                      <>
+                        {msg.attachment && (
+                          <div className="mb-2">
+                            {msg.messageType === "image" ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
 
-                    {msg.content && (
-                      <p className="text-sm leading-5">
-                        {msg.content}
+                                  setMediaViewer({
+                                    url: msg.attachment!.url,
+                                    type: "image",
+                                    name: msg.attachment!.name,
+                                  });
+                                }}
+                                className="block overflow-hidden rounded-xl"
+                              >
+                                <img
+                                  src={msg.attachment.url}
+                                  alt={msg.attachment.name || "Image"}
+                                  className="max-h-72 max-w-full rounded-xl object-cover transition duration-200 active:scale-[0.98]"
+                                />
+                              </button>
+                            ) : msg.messageType === "video" ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
 
-                        {msg.isEdited && !msg.isDeleted && (
-                          <span className="ml-1.5 text-[10px] text-zinc-400">
-                            (edited)
-                          </span>
+                                  setMediaViewer({
+                                    url: msg.attachment!.url,
+                                    type: "video",
+                                    name: msg.attachment!.name,
+                                  });
+                                }}
+                                className="block overflow-hidden rounded-xl"
+                              >
+                                <video
+                                  src={msg.attachment.url}
+                                  muted
+                                  playsInline
+                                  className="max-h-72 max-w-full rounded-xl object-cover"
+                                />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+
+                                  if (
+                                    msg.attachment!.type ===
+                                      "application/pdf" ||
+                                    msg
+                                      .attachment!.name?.toLowerCase()
+                                      .endsWith(".pdf")
+                                  ) {
+                                    setPdfViewer({
+                                      url: msg.attachment!.url,
+                                      name: msg.attachment!.name,
+                                    });
+
+                                    return;
+                                  }
+
+                                  window.open(
+                                    msg.attachment!.url,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  );
+                                }}
+                                className={`flex min-w-[220px] max-w-[300px] items-center gap-3 rounded-xl p-3 text-left transition ${
+                                  isMe
+                                    ? "bg-zinc-800 hover:bg-zinc-700"
+                                    : "bg-zinc-100 hover:bg-zinc-200"
+                                }`}
+                              >
+                                <div
+                                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                                    isMe ? "bg-zinc-700" : "bg-white"
+                                  }`}
+                                >
+                                  <FileText
+                                    size={19}
+                                    className={
+                                      isMe ? "text-white" : "text-zinc-700"
+                                    }
+                                  />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className={`truncate text-xs font-semibold ${
+                                      isMe ? "text-white" : "text-zinc-900"
+                                    }`}
+                                  >
+                                    {msg.attachment.name}
+                                  </p>
+
+                                  <p
+                                    className={`mt-0.5 text-[10px] ${
+                                      isMe ? "text-zinc-400" : "text-zinc-500"
+                                    }`}
+                                  >
+                                    {msg.attachment.type
+                                      ?.split("/")?.[1]
+                                      ?.toUpperCase() || "FILE"}
+                                    {" • "}
+                                    {(
+                                      msg.attachment.size /
+                                      1024 /
+                                      1024
+                                    ).toFixed(2)}{" "}
+                                    MB
+                                  </p>
+                                </div>
+                              </button>
+                            )}
+                          </div>
                         )}
-                      </p>
+
+                        {msg.content && (
+                          <p className="text-sm leading-5">
+                            {msg.content}
+
+                            {msg.isEdited && (
+                              <span className="ml-1.5 text-[10px] text-zinc-400">
+                                (edited)
+                              </span>
+                            )}
+                          </p>
+                        )}
+                      </>
                     )}
 
                     <div className="mt-1.5 text-[10px] text-zinc-400">
