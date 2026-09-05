@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import Navbar from "../components/Layout/Navbar";
 import Footer from "./dashboard/Dashboard-Components/Footer";
+import NotificationProvider from "../components/ui/NotificationProvider";
 
 export default function DashboardLayout({
   children,
@@ -35,6 +36,7 @@ export default function DashboardLayout({
       {/* <Navbar /> */}
 
       <main className="">
+        <NotificationProvider />
         {children}
       </main>
 
