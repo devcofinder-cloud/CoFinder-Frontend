@@ -4,6 +4,7 @@ import {
     getPostsByUserId,
     getUserProfileById,
 } from "../services/dashboard.service";
+import { getProfessionalProfile } from "../services/auth.service";
 
 /* =========================================================
    POST TYPES
@@ -152,6 +153,7 @@ interface DashboardState {
 
     userData: UserProfileData | null;
     loadingProfile: boolean;
+    professionalProfile:ProfessionalProfile | null;
 
     userPosts: Post[];
 
@@ -166,6 +168,8 @@ interface DashboardState {
     fetchPostsByUserId: (
         userId: string
     ) => Promise<void>;
+
+    fetchProfessionalProfileById: (id:string)=>Promise<void>;
 }
 
 /* =========================================================
@@ -180,6 +184,7 @@ export const dashboardStore = create<DashboardState>((set) => ({
     loadingProfile: false,
 
     userPosts:[],
+    professionalProfile:null,
 
     fetchPosts: async () => {
         try {
@@ -249,4 +254,13 @@ export const dashboardStore = create<DashboardState>((set) => ({
         set({loadingPosts:false})
     }
 },
+
+fetchProfessionalProfileById:async(id)=>{
+    try {
+        const res = await getProfessionalProfile(id)
+        set({professionalProfile: res.data.data || res.data})
+    } catch (error) {
+        console.log(error)
+    }
+}
 }));

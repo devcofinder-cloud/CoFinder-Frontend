@@ -14,7 +14,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-
 import { authStore } from "@/app/store/authStore";
 import { useEffect } from "react";
 
@@ -22,12 +21,12 @@ export default function DashboardPage() {
   const appRouter = useRouter();
 
   // const user = authStore((state) => state.user);
-  const user = authStore((state)=>state.user)
-  const fetchProfile = authStore((state)=>state.fetchProfile)
+  const user = authStore((state) => state.user);
+  const fetchProfile = authStore((state) => state.fetchProfile);
 
-  useEffect(()=>{
+  useEffect(() => {
     fetchProfile();
-  })
+  });
 
   const stats = [
     {
@@ -125,54 +124,85 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#fafafa] p-6 sm:p-8 md:p-10 font-sans text-zinc-900">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* Header */}
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
-                Dashboard Overview
-              </p>
-            </div>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">
-              Welcome back, {user?.name}
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              Here is what is happening across your founder ecosystem today.
-            </p>
-          </div>
+        <header className="sm:flex sm:items-center sm:justify-between">
+          <div className="w-full">
+            {/* Top Meta */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-4 w-4">
+                  <span className="absolute h-full w-full rounded-full bg-emerald-500 opacity-30 animate-ping" />
+                  <span className="relative h-4 w-4 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                </span>
 
-          <button
-          onClick={()=>appRouter.push('/create-post')}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-black hover:shadow-md active:scale-95">
-            {/* <Plus className="h-4 w-4" /> */}
-            <span>My Posts</span>
-          </button>
+                <span className="text-[12px] font-medium uppercase tracking-[0.18em] text-zinc-400">
+                  Dashboard
+                </span>
+              </div>
+
+              {/* Mobile profile avatar */}
+              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-xs font-medium text-zinc-700 shadow-sm sm:hidden">
+                {user?.name?.charAt(0)?.toUpperCase() || "U"}
+              </div>
+            </div>
+
+            {/* Greeting */}
+            <div className="mt-5 sm:mt-2">
+              <h1 className="text-[29px] font-semibold leading-[1.15] tracking-[-0.035em] text-zinc-950 sm:text-4xl">
+                Welcome back,
+              </h1>
+
+              <h2 className="mt-1 text-[29px] font-normal leading-[1.15] tracking-[-0.035em] text-zinc-400 sm:text-4xl">
+                {user?.name || "Founder"}
+              </h2>
+            </div>
+
+            {/* Description */}
+            <p className="mt-3 max-w-md text-[12px] leading-5 text-zinc-500 sm:text-sm">
+              Here's what's happening across your founder ecosystem today.
+            </p>
+
+            {/* Mobile divider */}
+            <div className="mt-6 h-px w-full bg-zinc-100 sm:hidden" />
+
+            {/* Mobile quick context */}
+            <div className="mt-4 flex items-center gap-2 sm:hidden">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100">
+                <TrendingUp className="h-3.5 w-3.5 text-zinc-600" />
+              </div>
+
+              <span className="text-[11px] text-zinc-400">
+                Your founder network is active
+              </span>
+            </div>
+          </div>
         </header>
         {/* Profile Progress--- hidden in desktop screen  */}
         <div className="mt-4 block sm:hidden  rounded-2xl border border-zinc-200 bg-white p-4">
           {/* Status */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zinc-400 opacity-40" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-zinc-900" />
-              </span>
+          {(user?.completionStatus ?? 0) < 100 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zinc-400 opacity-40" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-zinc-900" />
+                </span>
 
-              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
-                Profile Incomplete
+                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  Profile Incomplete
+                </span>
+              </div>
+
+              <span className="text-sm font-bold tracking-tight text-zinc-900">
+                {user?.completionStatus ?? 0}%
               </span>
             </div>
-
-            <span className="text-sm font-bold tracking-tight text-zinc-900">
-              {user?.completionStatus || 0}%
-            </span>
-          </div>
+          )}
 
           {/* Progress */}
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
             <div
               className="h-full rounded-full bg-zinc-900 transition-all duration-700 ease-out"
-              style={{ width: "72%" }}
+              style={{ width: `${user?.completionStatus || 0}` }}
             />
           </div>
 
@@ -187,7 +217,7 @@ export default function DashboardPage() {
               </p>
 
               <p className="mt-1 text-[11px] font-medium text-zinc-400">
-                25% remaining
+                {Math.max(0, 100 - (user?.completionStatus ?? 0))}% remaining
               </p>
             </div>
 
@@ -399,8 +429,9 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <button
-                onClick={()=>appRouter.push('/connections')}
-                className="flex  gap-1   text-xs font-semibold text-zinc-600 transition hover:text-black">
+                  onClick={() => appRouter.push("/connections")}
+                  className="flex  gap-1   text-xs font-semibold text-zinc-600 transition hover:text-black"
+                >
                   <span>View All</span>
                   <ArrowUpRight className="h-3.5 w-3.5 hidden sm:block" />
                 </button>
@@ -471,7 +502,9 @@ export default function DashboardPage() {
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
                 <div
                   className="h-full rounded-full bg-zinc-900 transition-all duration-700 ease-out"
-                  style={{ width: "72%" }}
+                  style={{
+                    width: `${user?.completionStatus ?? 0}%`,
+                  }}
                 />
               </div>
 
