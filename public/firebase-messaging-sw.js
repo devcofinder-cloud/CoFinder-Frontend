@@ -18,24 +18,47 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  console.log(
-    "[firebase-messaging-sw.js]",
-    payload
-  );
+  console.log("[firebase-messaging-sw.js]", payload);
 
-  const title =
-    payload.data?.title || "CoFinder";
+  const title = payload.data?.title || "CoFinder";
 
   const options = {
-    body:
-      payload.data?.body ||
-      "You have a new notification",
-
-    data: payload.data || {},
+    body: payload.data?.body || "You have a new message",
+    icon: "/icon-192.png",
+    data: {
+      url: payload.data?.url || "/",
+      conversationId: payload.data?.conversationId,
+    },
   };
 
-  self.registration.showNotification(
-    title,
-    options
+  self.registration.showNotification(title, options);
+});
+
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const url =
+    event.notification.data?.url ||
+    "/";
+
+  event.waitUntil(
+    clients.matchAll({
+      type: "window",
+      includeUncontrolled: true,
+    }).then((clientList) => {
+      // Agar website already open hai
+      for (const client of clientList) {
+        if ("focus" in client) {
+          client.navigate(url);
+          return client.focus();
+        }
+      }
+
+      // Agar website open nahi hai
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
   );
 });
