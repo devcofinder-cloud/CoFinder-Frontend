@@ -24,12 +24,11 @@ messaging.onBackgroundMessage((payload) => {
   );
 
   const title =
-    payload.notification?.title ||
-    "CoFinder";
+    payload.data?.title || "CoFinder";
 
   const options = {
     body:
-      payload.notification?.body ||
+      payload.data?.body ||
       "You have a new notification",
 
     data: payload.data || {},
