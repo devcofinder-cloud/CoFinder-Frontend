@@ -24,7 +24,7 @@ messaging.onBackgroundMessage((payload) => {
 
   const options = {
     body: payload.data?.body || "You have a new message",
-    icon: "/icon-192.png",
+    icon: "/images/logo.png",
     data: {
       url: payload.data?.url || "/",
       conversationId: payload.data?.conversationId,
