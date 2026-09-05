@@ -6,12 +6,13 @@ import {
 } from "firebase/messaging";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAPfR_rV8tk4LL3If6MMDDO9JgCGCeqc5Y",
+  apiKey: "AIzaSyAPfR_r8Vtk4LL3If6MMDDO9JgCGCeqc5Y",
   authDomain: "cofinder-4ac93.firebaseapp.com",
   projectId: "cofinder-4ac93",
   storageBucket: "cofinder-4ac93.firebasestorage.app",
   messagingSenderId: "1072067939537",
   appId: "1:1072067939537:web:5979e12aa402d797c889f0",
+  measurementId: "G-PRLBB4H139"
 };
 
 const app =
