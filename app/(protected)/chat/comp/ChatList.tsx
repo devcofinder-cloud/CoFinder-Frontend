@@ -1,5 +1,5 @@
 "use client";
-
+import { io, Socket } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
 import {
   Search,
@@ -78,6 +78,86 @@ export default function ChatList({ activeConversationId }: ChatListProps) {
 
     load();
   }, [fetchConversations]);
+
+
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+
+  if (!token) return;
+
+  const socket: Socket = io(
+    process.env.NEXT_PUBLIC_SOCKET_URL as string,
+    {
+      auth: {
+        token,
+      },
+    }
+  );
+
+  socket.on("connect", () => {
+    console.log("ChatList socket connected:", socket.id);
+  });
+
+  const handleNewMessage = (message: any) => {
+    console.log("ChatList new message:", message);
+
+    useChatStore.setState((state) => {
+      const conversationId = String(
+        message.conversation?._id ||
+        message.conversation ||
+        message.conversationId
+      );
+
+      if (!conversationId) return state;
+
+      const existingConversation = state.conversations.find(
+        (conversation) =>
+          String(conversation._id) === conversationId
+      );
+
+      // Agar conversation list me already hai
+      if (existingConversation) {
+        const updatedConversation = {
+          ...existingConversation,
+          lastMessage: message,
+          lastMessageAt: message.createdAt,
+        };
+
+        const updatedConversations = state.conversations
+          .map((conversation) =>
+            String(conversation._id) === conversationId
+              ? updatedConversation
+              : conversation
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.lastMessageAt || 0).getTime() -
+              new Date(a.lastMessageAt || 0).getTime()
+          );
+
+        return {
+          ...state,
+          conversations: updatedConversations,
+        };
+      }
+
+      // Conversation list me nahi hai
+      // Is case me next fetch se aa jayegi
+      return state;
+    });
+  };
+
+  socket.on("new_message", handleNewMessage);
+
+  socket.on("connect_error", (error) => {
+    console.error("ChatList socket error:", error.message);
+  });
+
+  return () => {
+    socket.off("new_message", handleNewMessage);
+    socket.disconnect();
+  };
+}, []);
 
   useEffect(() => {
     if (!conversations.length) return;
