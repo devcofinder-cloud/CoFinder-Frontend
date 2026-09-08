@@ -40,6 +40,7 @@ export interface Message {
     avatar?: string | null;
   };
 
+  isRead:boolean;
   content: string;
   messageType: "text" | "image" | "video" | "file";
 
@@ -322,3 +323,7 @@ export const getConversationId = (
 export const deleteConversation=(id:string)=>{
   return api.delete(`/conversations/${id}`)
 }
+
+export const getMessageDetails = (conversationId: string) => {
+  return api.get(`/messages/${conversationId}/message-detail`);
+};

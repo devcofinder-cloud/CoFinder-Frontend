@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 
 import {
@@ -16,13 +15,58 @@ import {
   getTotalUnreadCount,
   searchMessages,
   clearConversation,
+  getMessageDetails,
   deleteConversation as deleteConversationService,
 } from "@/app/services/chat.service";
+
+export interface MessageDetailUser {
+  _id: string;
+  name: string;
+  displayName?: string;
+  email: string;
+  username?: string;
+  profileImage?: string | null;
+  profileImageType?: "avatar" | "image";
+}
+
+export interface MediaFile {
+  messageId: string;
+  messageType: "image" | "video" | "file" | "text";
+
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+
+  sender: {
+    _id: string;
+    name: string;
+    displayName?: string;
+    email: string;
+    profileImage?: string | null;
+    profileImageType?: "avatar" | "image";
+  } | null;
+
+  createdAt: string;
+}
+
+export interface MessageDetails {
+  conversationId: string;
+
+  user: MessageDetailUser | null;
+
+  mediaFiles: MediaFile[];
+
+  totalMedia: number;
+}
 
 interface ChatState {
   conversations: Conversation[];
   activeConversation: Conversation | null;
   messages: Message[];
+
+  messageDetails: MessageDetails | null;
+  loadingMessageDetails: boolean;
 
   loadingConversations: boolean;
   loadingMessages: boolean;
@@ -37,6 +81,7 @@ interface ChatState {
   fetchConversations: () => Promise<void>;
 
   fetchConversation: (id: string) => Promise<void>;
+  fetchMessageDetails:(id:string)=>Promise<void>;
 
   fetchMessages: (
     conversationId: string,
@@ -95,16 +140,9 @@ const normalizeMessage = (message: any): Message => {
       message.conversation?._id ||
       message.conversation ||
       "",
-    senderId:
-      message.senderId ||
-      message.sender?._id ||
-      message.sender ||
-      "",
+    senderId: message.senderId || message.sender?._id || message.sender || "",
     receiverId:
-      message.receiverId ||
-      message.receiver?._id ||
-      message.receiver ||
-      "",
+      message.receiverId || message.receiver?._id || message.receiver || "",
     receiver: message.receiver?._id || message.receiver,
   };
 };
@@ -113,6 +151,8 @@ export const useChatStore = create<ChatState>((set) => ({
   conversations: [],
   activeConversation: null,
   messages: [],
+  messageDetails: null,
+  loadingMessageDetails: false,
 
   loadingConversations: false,
   loadingMessages: false,
@@ -130,13 +170,10 @@ export const useChatStore = create<ChatState>((set) => ({
 
       const response = await getConversation();
 
-      const conversations =
-        response.data?.data || response.data || [];
+      const conversations = response.data?.data || response.data || [];
 
       set({
-        conversations: Array.isArray(conversations)
-          ? conversations
-          : [],
+        conversations: Array.isArray(conversations) ? conversations : [],
       });
     } catch (error) {
       console.error("Failed to fetch conversations:", error);
@@ -155,8 +192,7 @@ export const useChatStore = create<ChatState>((set) => ({
     try {
       const response = await getConversationId(id);
 
-      const conversation =
-        response.data?.data || response.data || null;
+      const conversation = response.data?.data || response.data || null;
 
       set({
         activeConversation: conversation,
@@ -170,26 +206,15 @@ export const useChatStore = create<ChatState>((set) => ({
     }
   },
 
-  fetchMessages: async (
-    conversationId,
-    page = 1,
-    limit = 20,
-  ) => {
+  fetchMessages: async (conversationId, page = 1, limit = 20) => {
     try {
       set({
         loadingMessages: true,
       });
 
-      const response = await getMessages(
-        conversationId,
-        page,
-        limit,
-      );
+      const response = await getMessages(conversationId, page, limit);
 
-      const data =
-        response.data?.data ||
-        response.data ||
-        {};
+      const data = response.data?.data || response.data || {};
 
       const rawMessages = Array.isArray(data)
         ? data
@@ -234,10 +259,7 @@ export const useChatStore = create<ChatState>((set) => ({
         participants,
       });
 
-      const conversation =
-        response.data?.data ||
-        response.data ||
-        null;
+      const conversation = response.data?.data || response.data || null;
 
       if (!conversation) {
         return null;
@@ -255,55 +277,37 @@ export const useChatStore = create<ChatState>((set) => ({
 
       return conversation;
     } catch (error) {
-      console.error(
-        "Failed to create conversation:",
-        error,
-      );
+      console.error("Failed to create conversation:", error);
 
       return null;
     }
   },
 
-  editExistingMessage: async (
-    messageId,
-    content,
-  ) => {
+  editExistingMessage: async (messageId, content) => {
     try {
       set({
         editingMessage: true,
       });
 
-      const response = await editMessage(
-        messageId,
-        content,
-      );
+      const response = await editMessage(messageId, content);
 
-      const rawMessage =
-        response.data?.data ||
-        response.data ||
-        null;
+      const rawMessage = response.data?.data || response.data || null;
 
       if (!rawMessage) {
         return null;
       }
 
-      const message =
-        normalizeMessage(rawMessage);
+      const message = normalizeMessage(rawMessage);
 
       set((state) => ({
         messages: state.messages.map((item) =>
-          String(item._id) === String(messageId)
-            ? message
-            : item,
+          String(item._id) === String(messageId) ? message : item,
         ),
       }));
 
       return message;
     } catch (error) {
-      console.error(
-        "Failed to edit message:",
-        error,
-      );
+      console.error("Failed to edit message:", error);
 
       return null;
     } finally {
@@ -332,11 +336,17 @@ export const useChatStore = create<ChatState>((set) => ({
       set({ deletingMessage: false });
     }
   },
-
-  markMessageAsDeleted: (messageId) => {
+  markMessageAsDeleted: (messageId: string) => {
     set((state) => ({
-      messages: state.messages.filter(
-        (item) => String(item._id) !== String(messageId),
+      messages: state.messages.map((message) =>
+        String(message._id) === String(messageId)
+          ? {
+              ...message,
+              isDeleted: true,
+              content: "",
+              attachment: undefined,
+            }
+          : message,
       ),
     }));
   },
@@ -346,45 +356,34 @@ export const useChatStore = create<ChatState>((set) => ({
       await markMessageAsRead(messageId);
 
       set((state) => ({
-        messages: state.messages.map(
-          (message) =>
-            String(message._id) ===
-            String(messageId)
-              ? {
-                  ...message,
-                  isRead: true,
-                  readAt:
-                    new Date().toISOString(),
-                }
-              : message,
+        messages: state.messages.map((message) =>
+          String(message._id) === String(messageId)
+            ? {
+                ...message,
+                isRead: true,
+                readAt: new Date().toISOString(),
+              }
+            : message,
         ),
       }));
     } catch (error) {
-      console.error(
-        "Failed to mark message as read:",
-        error,
-      );
+      console.error("Failed to mark message as read:", error);
     }
   },
 
   markChatAsRead: async (conversationId) => {
     try {
-      await markConversationAsRead(
-        conversationId,
-      );
+      await markConversationAsRead(conversationId);
 
       set((state) => ({
-        messages: state.messages.map(
-          (message) =>
-            String(message.conversationId) ===
-            String(conversationId)
-              ? {
-                  ...message,
-                  isRead: true,
-                  readAt:
-                    new Date().toISOString(),
-                }
-              : message,
+        messages: state.messages.map((message) =>
+          String(message.conversationId) === String(conversationId)
+            ? {
+                ...message,
+                isRead: true,
+                readAt: new Date().toISOString(),
+              }
+            : message,
         ),
 
         unreadCounts: {
@@ -393,27 +392,17 @@ export const useChatStore = create<ChatState>((set) => ({
         },
       }));
     } catch (error) {
-      console.error(
-        "Failed to mark conversation as read:",
-        error,
-      );
+      console.error("Failed to mark conversation as read:", error);
     }
   },
 
   fetchUnreadCount: async (conversationId) => {
     try {
-      const response =
-        await getUnreadCount(
-          conversationId,
-        );
+      const response = await getUnreadCount(conversationId);
 
-      const data =
-        response.data?.data ||
-        response.data ||
-        {};
+      const data = response.data?.data || response.data || {};
 
-      const count =
-        Number(data.unreadCount) || 0;
+      const count = Number(data.unreadCount) || 0;
 
       set((state) => ({
         unreadCounts: {
@@ -422,58 +411,33 @@ export const useChatStore = create<ChatState>((set) => ({
         },
       }));
     } catch (error) {
-      console.error(
-        "Failed to fetch unread count:",
-        error,
-      );
+      console.error("Failed to fetch unread count:", error);
     }
   },
 
   fetchTotalUnreadCount: async () => {
     try {
-      const response =
-        await getTotalUnreadCount();
+      const response = await getTotalUnreadCount();
 
-      const data =
-        response.data?.data ||
-        response.data ||
-        {};
+      const data = response.data?.data || response.data || {};
 
       set({
-        totalUnreadCount:
-          Number(data.unreadCount) || 0,
+        totalUnreadCount: Number(data.unreadCount) || 0,
       });
     } catch (error) {
-      console.error(
-        "Failed to fetch total unread count:",
-        error,
-      );
+      console.error("Failed to fetch total unread count:", error);
     }
   },
 
-  searchChatMessages: async (
-    conversationId,
-    query,
-    page = 1,
-    limit = 20,
-  ) => {
+  searchChatMessages: async (conversationId, query, page = 1, limit = 20) => {
     try {
       if (!query.trim()) {
         return [];
       }
 
-      const response =
-        await searchMessages(
-          conversationId,
-          query,
-          page,
-          limit,
-        );
+      const response = await searchMessages(conversationId, query, page, limit);
 
-      const data =
-        response.data?.data ||
-        response.data ||
-        {};
+      const data = response.data?.data || response.data || {};
 
       const rawMessages = Array.isArray(data)
         ? data
@@ -481,72 +445,53 @@ export const useChatStore = create<ChatState>((set) => ({
           ? data.messages
           : [];
 
-      return rawMessages.map(
-        normalizeMessage,
-      );
+      return rawMessages.map(normalizeMessage);
     } catch (error) {
-      console.error(
-        "Failed to search messages:",
-        error,
-      );
+      console.error("Failed to search messages:", error);
 
       return [];
     }
   },
 
-  clearConversationMessages: async (
-    conversationId,
-  ) => {
+  clearConversationMessages: async (conversationId) => {
     try {
-      await clearConversation(
-        conversationId,
-      );
+      await clearConversation(conversationId);
 
       set((state) => ({
         messages: state.messages.filter(
           (message) =>
-            String(message.conversationId) !==
-            String(conversationId),
+            String(message.conversationId) !== String(conversationId),
         ),
       }));
 
       return true;
     } catch (error) {
-      console.error(
-        "Failed to clear conversation:",
-        error,
-      );
+      console.error("Failed to clear conversation:", error);
 
       return false;
     }
   },
 
-  setActiveConversation: (
-    conversation,
-  ) => {
+  setActiveConversation: (conversation) => {
     set({
       activeConversation: conversation,
       messages: [],
+      messageDetails: null,
     });
   },
 
   setMessages: (messages) => {
     set({
-      messages: messages.map(
-        normalizeMessage,
-      ),
+      messages: messages.map(normalizeMessage),
     });
   },
 
   addMessage: (rawMessage) => {
-    const message =
-      normalizeMessage(rawMessage);
+    const message = normalizeMessage(rawMessage);
 
     set((state) => {
       const exists = state.messages.some(
-        (item) =>
-          String(item._id) ===
-          String(message._id),
+        (item) => String(item._id) === String(message._id),
       );
 
       if (exists) {
@@ -554,10 +499,7 @@ export const useChatStore = create<ChatState>((set) => ({
       }
 
       return {
-        messages: [
-          ...state.messages,
-          message,
-        ],
+        messages: [...state.messages, message],
       };
     });
   },
@@ -565,9 +507,7 @@ export const useChatStore = create<ChatState>((set) => ({
   removeMessage: (messageId) => {
     set((state) => ({
       messages: state.messages.filter(
-        (message) =>
-          String(message._id) !==
-          String(messageId),
+        (message) => String(message._id) !== String(messageId),
       ),
     }));
   },
@@ -577,57 +517,69 @@ export const useChatStore = create<ChatState>((set) => ({
       activeConversation: null,
       messages: [],
       unreadCounts: {},
+      messageDetails: null,
     });
   },
 
-  deleteConversation: async (
-    conversationId,
-  ) => {
+  deleteConversation: async (conversationId) => {
     try {
       set({
         deleteLoading: true,
       });
 
-      await deleteConversationService(
-        conversationId,
-      );
+      await deleteConversationService(conversationId);
 
       set((state) => ({
-        conversations:
-          state.conversations.filter(
-            (conversation) =>
-              String(conversation._id) !==
-              String(conversationId),
-          ),
+        conversations: state.conversations.filter(
+          (conversation) => String(conversation._id) !== String(conversationId),
+        ),
 
         activeConversation:
           state.activeConversation &&
-          String(
-            state.activeConversation._id,
-          ) === String(conversationId)
+          String(state.activeConversation._id) === String(conversationId)
             ? null
             : state.activeConversation,
 
         messages:
           state.activeConversation &&
-          String(
-            state.activeConversation._id,
-          ) === String(conversationId)
+          String(state.activeConversation._id) === String(conversationId)
             ? []
             : state.messages,
       }));
 
       return true;
     } catch (error) {
-      console.error(
-        "Failed to delete conversation:",
-        error,
-      );
+      console.error("Failed to delete conversation:", error);
 
       return false;
     } finally {
       set({
         deleteLoading: false,
+      });
+    }
+  },
+  fetchMessageDetails: async (conversationId: string) => {
+    try {
+      set({
+        loadingMessageDetails: true,
+      });
+
+      const response = await getMessageDetails(conversationId);
+
+      const details = response.data?.data || response.data || null;
+
+      set({
+        messageDetails: details,
+      });
+    } catch (error) {
+      console.error("Failed to fetch message details:", error);
+
+      set({
+        messageDetails: null,
+      });
+    } finally {
+      set({
+        loadingMessageDetails: false,
       });
     }
   },

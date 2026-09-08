@@ -49,9 +49,8 @@ export default function MessageScreen({
     markMessageAsDeleted,
     clearConversationMessages,
     removeMessage,
+    markMessageRead,
   } = useChatStore();
-
- 
 
   const [message, setMessage] = useState("");
   const [typing, setTyping] = useState(false);
@@ -219,9 +218,8 @@ export default function MessageScreen({
       }
     });
     socket.on("notification", (notification) => {
-  console.log("🔔 NOTIFICATION RECEIVED:", notification);
-
-});
+      console.log("🔔 NOTIFICATION RECEIVED:", notification);
+    });
 
     socket.on(
       "user_typing",
@@ -643,6 +641,27 @@ export default function MessageScreen({
     });
   };
 
+  useEffect(() => {
+    if (!activeConversation?._id || !messages.length || !currentUserId) {
+      return;
+    }
+
+    const unreadMessages = messages.filter((message) => {
+      const receiverId =
+        typeof message.receiver === "object"
+          ? message.receiver?._id
+          : message.receiver;
+
+      return String(receiverId) === String(currentUserId) && !message.isRead;
+    });
+
+    if (!unreadMessages.length) return;
+
+    unreadMessages.forEach((message) => {
+      markMessageRead(String(message._id));
+    });
+  }, [activeConversation?._id, currentUserId, messages, markMessageRead]);
+
   return (
     <section
       className="flex min-w-0 flex-1 flex-col bg-zinc-50"
@@ -676,7 +695,9 @@ export default function MessageScreen({
 
           <div
             className="min-w-0"
-            onClick={() => appRouter.push("/chat/messageDetails")}
+            onClick={() =>
+              appRouter.push(`/chat/${conversationId}/message-details`)
+            }
           >
             <h2 className="truncate text-sm font-bold text-zinc-950">
               {user?.name || "User"}
@@ -717,13 +738,6 @@ export default function MessageScreen({
             <Video size={19} />
           </button>
 
-          {/* <button
-            type="button"
-            onClick={() => setShowChatOptions(true)}
-            className=" flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 sm:flex"
-          >
-            <MoreVertical size={18} />
-          </button> */}
           <ChatOptions
             onClearChat={async () => {
               if (conversationId) {
@@ -762,7 +776,7 @@ export default function MessageScreen({
                 Loading your chats...
               </p>
             </div>
-          ) : messages.filter((msg) => !msg.isDeleted).length === 0 ? (
+          ) : messages.length === 0 ? (
             <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100">
                 <Send size={18} className="text-zinc-400" />
@@ -777,9 +791,7 @@ export default function MessageScreen({
               </p>
             </div>
           ) : (
-            messages
-              .filter((msg) => !msg.isDeleted)
-              .map((msg) => {
+            messages.map((msg) => {
               const isMe = String(msg.senderId) === String(currentUserId);
 
               const replyTo = (
@@ -825,19 +837,21 @@ export default function MessageScreen({
                       {!msg.isDeleted && (
                         <button
                           type="button"
-                          onClick={async () => {
+                          onClick={() => {
                             const msgId = String(msg._id);
                             const socket = socketRef.current;
 
+                            // Instant UI update
+                            markMessageAsDeleted(msgId);
+                            setSelectedMessage(null);
+
+                            // Backend + realtime
                             if (socket && socket.connected) {
                               socket.emit("delete_message", {
                                 messageId: msgId,
                                 conversationId: String(conversationId),
                               });
                             }
-
-                            await deleteExistingMessage(msgId);
-                            setSelectedMessage(null);
                           }}
                           className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium text-red-600 transition hover:bg-red-50"
                         >
@@ -913,7 +927,9 @@ export default function MessageScreen({
                         <Trash2 size={14} className="shrink-0" />
 
                         <p className="text-sm italic">
-                          This message has been deleted
+                          {isMe
+                            ? "You deleted this message"
+                            : "This message was deleted"}
                         </p>
                       </div>
                     ) : (
@@ -988,12 +1004,13 @@ export default function MessageScreen({
                                     "noopener,noreferrer",
                                   );
                                 }}
-                                className={`flex min-w-[220px] max-w-[300px] items-center gap-3 rounded-xl p-3 text-left transition ${
+                                className={`flex min-w-0 max-w-[200px] items-center gap-3 overflow-hidden rounded-xl p-3 text-left transition ${
                                   isMe
                                     ? "bg-zinc-800 hover:bg-zinc-700"
                                     : "bg-zinc-100 hover:bg-zinc-200"
                                 }`}
                               >
+                                {/* FILE ICON */}
                                 <div
                                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
                                     isMe ? "bg-zinc-700" : "bg-white"
@@ -1007,9 +1024,11 @@ export default function MessageScreen({
                                   />
                                 </div>
 
-                                <div className="min-w-0 flex-1">
+                                {/* FILE INFO */}
+                                <div className="min-w-0 flex-1 overflow-hidden">
                                   <p
-                                    className={`truncate text-xs font-semibold ${
+                                    title={msg.attachment.name}
+                                    className={`block truncate text-xs font-semibold ${
                                       isMe ? "text-white" : "text-zinc-900"
                                     }`}
                                   >
@@ -1017,7 +1036,7 @@ export default function MessageScreen({
                                   </p>
 
                                   <p
-                                    className={`mt-0.5 text-[10px] ${
+                                    className={`mt-0.5 truncate text-[10px] ${
                                       isMe ? "text-zinc-400" : "text-zinc-500"
                                     }`}
                                   >
@@ -1128,13 +1147,16 @@ export default function MessageScreen({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-3 p-3">
+              <div className="flex items-center gap-3 overflow-hidden p-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-100">
                   <FileText size={19} className="text-zinc-600" />
                 </div>
 
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-zinc-900">
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p
+                    className="block truncate text-xs font-semibold text-zinc-900"
+                    title={selectedFile.name}
+                  >
                     {selectedFile.name}
                   </p>
 
