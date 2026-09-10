@@ -271,7 +271,7 @@ export default function DashboardSearch() {
                                                             key={post._id}
                                                             onClick={() =>
                                                                 router.push(
-                                                                    `/posts/${post._id}`
+                                                                    `/post/${post._id}`
                                                                 )
                                                             }
                                                             className="flex w-full gap-3 rounded-xl p-2.5 text-left transition hover:bg-zinc-50"

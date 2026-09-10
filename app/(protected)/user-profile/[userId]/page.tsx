@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -25,6 +25,7 @@ import {
 import { dashboardStore } from "@/app/store/dashboardStore";
 import { useChatStore } from "@/app/store/chatStore";
 import { FaDiscord, FaGithub, FaLinkedin, FaTwitter } from "react-icons/fa";
+import { recordProfileView } from "@/app/services/dashboard.service";
 
 const TABS = ["Personal", "Professional", "Ideas"] as const;
 
@@ -121,6 +122,9 @@ export default function UserProfilePage() {
     fetchProfessionalProfileById,
   } = dashboardStore();
 
+  const viewTimerRef = useRef<NodeJS.Timeout | null>(null);
+const viewRecordedRef = useRef(false);
+
   const { createNewConversation } = useChatStore();
 
   const [activeTab, setActiveTab] = useState<Tab>("Personal");
@@ -136,6 +140,35 @@ export default function UserProfilePage() {
   >({});
 
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+
+
+  useEffect(() => {
+  if (!userId) return;
+
+  viewRecordedRef.current = false;
+
+  viewTimerRef.current = setTimeout(async () => {
+    if (viewRecordedRef.current) return;
+
+    try {
+      await recordProfileView(userId);
+
+      viewRecordedRef.current = true;
+    } catch (error) {
+      console.error(
+        "Failed to record profile view:",
+        error
+      );
+    }
+  }, 20000);
+
+  return () => {
+    if (viewTimerRef.current) {
+      clearTimeout(viewTimerRef.current);
+      viewTimerRef.current = null;
+    }
+  };
+}, [userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -281,43 +314,16 @@ export default function UserProfilePage() {
               )}
 
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                <span className="rounded-full bg-neutral-200 px-4 py-1.5 text-xs font-semibold text-neutral-700">
-                  {user?.role || "Member"}
-                </span>
-
-                <span className="rounded-full bg-neutral-200 px-4 py-1.5 text-xs font-semibold text-neutral-700">
-                  {user?.provider || "Email"}
-                </span>
-              </div>
-
-              {/* Profile Completion */}
-
-              <div className="mt-5">
-                <div className="mb-2 flex items-center justify-between text-xs">
-                  <span className="font-semibold text-neutral-600">
-                    Profile Completion
+                {user.username && (
+                  <span className="rounded-full bg-neutral-200 px-4 py-1.5 text-xs font-semibold text-neutral-700">
+                    {user?.username || "Member"}
                   </span>
-
-                  <span className="font-bold text-black">
-                    {user?.completionStatus || 0}%
+                )}
+                {user.email && (
+                  <span className="rounded-full bg-neutral-200 px-4 py-1.5 text-xs font-semibold text-neutral-700">
+                    {user?.email || "Email"}
                   </span>
-                </div>
-
-                <div className="h-2 overflow-hidden rounded-full bg-neutral-100">
-                  <motion.div
-                    initial={{
-                      width: 0,
-                    }}
-                    animate={{
-                      width: `${user?.completionStatus || 0}%`,
-                    }}
-                    transition={{
-                      duration: 0.8,
-                      ease: "easeOut",
-                    }}
-                    className="h-full rounded-full bg-black"
-                  />
-                </div>
+                )}
               </div>
             </div>
 

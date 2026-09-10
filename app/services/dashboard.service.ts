@@ -56,3 +56,17 @@ export const universalSearch = async (
 
     return response.data;
 };
+
+
+
+export const getPostById = (id:string)=>{
+  return api.get(`/posts/${id}`)
+}
+
+export const recordProfileView = (profileId: string) => {
+  return api.post(`/profile-count/${profileId}`);
+};
+
+export const getProfileViewCount = (profileId: string) => {
+  return api.get(`/profile-count/${profileId}/count`);
+};

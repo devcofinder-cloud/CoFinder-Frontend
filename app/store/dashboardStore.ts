@@ -7,26 +7,25 @@ import {
   getSameArchetypeUsers,
   getNearbyUsers,
   universalSearch,
+  getPostById,
 } from "../services/dashboard.service";
 import { getProfessionalProfile } from "../services/auth.service";
-
-
 
 export interface SearchUser extends User {}
 
 export interface SearchPost extends Post {
-    author: PostAuthor;
+  author: PostAuthor;
 }
 
 export interface SearchResults {
-    query: string;
-    users: SearchUser[];
-    posts: SearchPost[];
-    counts: {
-        users: number;
-        posts: number;
-        total: number;
-    };
+  query: string;
+  users: SearchUser[];
+  posts: SearchPost[];
+  counts: {
+    users: number;
+    posts: number;
+    total: number;
+  };
 }
 
 export interface PostMedia {
@@ -156,16 +155,18 @@ export interface RecommendedUser extends User {
 
 interface DashboardState {
   searchResults: SearchResults | null;
-loadingSearch: boolean;
+  loadingSearch: boolean;
 
-search: (
-    query?: string,
-    limit?: number
-) => Promise<void>;
+  search: (query?: string, limit?: number) => Promise<void>;
 
-clearSearch: () => void;
+  clearSearch: () => void;
   posts: Post[];
   loadingPosts: boolean;
+  post: Post | null;
+  loadingPost: boolean;
+
+  fetchPostById: (postId: string) => Promise<void>;
+  clearPost: () => void;
 
   userData: UserProfileData | null;
   loadingProfile: boolean;
@@ -201,6 +202,8 @@ clearSearch: () => void;
 export const dashboardStore = create<DashboardState>((set) => ({
   posts: [],
   loadingPosts: false,
+  post: null,
+  loadingPost: false,
 
   userData: null,
   loadingProfile: false,
@@ -208,7 +211,7 @@ export const dashboardStore = create<DashboardState>((set) => ({
   userPosts: [],
   professionalProfile: null,
   searchResults: null,
-loadingSearch: false,
+  loadingSearch: false,
 
   recommendedUsers: [],
   sameArchetypeUsers: [],
@@ -220,32 +223,32 @@ loadingSearch: false,
 
   search: async (query = "", limit = 10) => {
     try {
-        set({ loadingSearch: true });
+      set({ loadingSearch: true });
 
-        const response = await universalSearch(query, limit);
+      const response = await universalSearch(query, limit);
 
-        set({
-            searchResults: response.data || null,
-        });
+      set({
+        searchResults: response.data || null,
+      });
     } catch (error) {
-        console.error("Failed to search:", error);
+      console.error("Failed to search:", error);
 
-        set({
-            searchResults: null,
-        });
-    } finally {
-        set({
-            loadingSearch: false,
-        });
-    }
-},
-
-clearSearch: () => {
-    set({
+      set({
         searchResults: null,
+      });
+    } finally {
+      set({
         loadingSearch: false,
+      });
+    }
+  },
+
+  clearSearch: () => {
+    set({
+      searchResults: null,
+      loadingSearch: false,
     });
-},
+  },
 
   fetchPosts: async () => {
     try {
@@ -394,5 +397,34 @@ clearSearch: () => {
         loadingNearbyUsers: false,
       });
     }
+  },
+
+  fetchPostById: async (postId: string) => {
+    try {
+      set({ loadingPost: true });
+
+      const response = await getPostById(postId);
+
+      set({
+        post: response.data?.data || response.data || null,
+      });
+    } catch (error) {
+      console.error("Failed to fetch post:", error);
+
+      set({
+        post: null,
+      });
+    } finally {
+      set({
+        loadingPost: false,
+      });
+    }
+  },
+
+  clearPost: () => {
+    set({
+      post: null,
+      loadingPost: false,
+    });
   },
 }));

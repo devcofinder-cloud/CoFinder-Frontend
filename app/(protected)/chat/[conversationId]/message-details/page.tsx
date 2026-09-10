@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -14,10 +15,14 @@ import {
   Search,
   Ban,
   Flag,
+  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { useChatStore } from "@/app/store/chatStore";
+
+import MediaViewer from "@/app/(protected)/chat/comp/MediaViewer";
+import PdfViewer from "@/app/(protected)/chat/comp/PdfViewer";
 
 export default function MessageDetails() {
   const router = useRouter();
@@ -31,18 +36,104 @@ export default function MessageDetails() {
     fetchMessageDetails,
   } = useChatStore();
 
-  // =========================
+  // =====================================================
+  // VIEWER STATES
+  // =====================================================
+
+  const [mediaViewer, setMediaViewer] = useState<{
+    isOpen: boolean;
+    url: string;
+    type: "image" | "video";
+    name?: string;
+  }>({
+    isOpen: false,
+    url: "",
+    type: "image",
+  });
+
+  const [pdfViewer, setPdfViewer] = useState<{
+    isOpen: boolean;
+    url: string;
+    name?: string;
+  }>({
+    isOpen: false,
+    url: "",
+  });
+
+  // =====================================================
   // FETCH MESSAGE DETAILS
-  // =========================
+  // =====================================================
+
   useEffect(() => {
     if (!conversationId) return;
 
     fetchMessageDetails(conversationId);
   }, [conversationId, fetchMessageDetails]);
 
-  // =========================
+  // =====================================================
+  // OPEN IMAGE
+  // =====================================================
+
+  const openImage = (url: string, name?: string) => {
+    setMediaViewer({
+      isOpen: true,
+      url,
+      type: "image",
+      name,
+    });
+  };
+
+  // =====================================================
+  // OPEN VIDEO
+  // =====================================================
+
+  const openVideo = (url: string, name?: string) => {
+    setMediaViewer({
+      isOpen: true,
+      url,
+      type: "video",
+      name,
+    });
+  };
+
+  // =====================================================
+  // OPEN PDF
+  // =====================================================
+
+  const openPdf = (url: string, name?: string) => {
+    setPdfViewer({
+      isOpen: true,
+      url,
+      name,
+    });
+  };
+
+  // =====================================================
+  // CLOSE MEDIA
+  // =====================================================
+
+  const closeMediaViewer = () => {
+    setMediaViewer((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  // =====================================================
+  // CLOSE PDF
+  // =====================================================
+
+  const closePdfViewer = () => {
+    setPdfViewer((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  // =====================================================
   // LOADING
-  // =========================
+  // =====================================================
+
   if (loadingMessageDetails) {
     return (
       <main className="min-h-screen bg-zinc-50">
@@ -83,9 +174,10 @@ export default function MessageDetails() {
     );
   }
 
-  // =========================
+  // =====================================================
   // NO DATA
-  // =========================
+  // =====================================================
+
   if (!messageDetails || !messageDetails.user) {
     return (
       <main className="min-h-screen bg-zinc-50">
@@ -132,9 +224,10 @@ export default function MessageDetails() {
     );
   }
 
-  // =========================
+  // =====================================================
   // DATA
-  // =========================
+  // =====================================================
+
   const user = messageDetails.user;
   const mediaFiles = messageDetails.mediaFiles || [];
 
@@ -167,7 +260,10 @@ export default function MessageDetails() {
 
   return (
     <main className="min-h-screen bg-zinc-50">
-      {/* ================= HEADER ================= */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
+
       <header className="sticky top-0 z-30 flex h-[72px] items-center border-b border-zinc-200 bg-white/95 px-4 backdrop-blur sm:px-6">
         <button
           type="button"
@@ -189,7 +285,11 @@ export default function MessageDetails() {
       </header>
 
       <div className="mx-auto max-w-2xl px-4 pb-12 pt-6 sm:px-6">
-        {/* ================= PROFILE ================= */}
+
+        {/* =====================================================
+            PROFILE
+        ===================================================== */}
+
         <motion.section
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -233,7 +333,10 @@ export default function MessageDetails() {
           </div>
         </motion.section>
 
-        {/* ================= MEDIA ================= */}
+        {/* =====================================================
+            MEDIA
+        ===================================================== */}
+
         <motion.section
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -260,10 +363,8 @@ export default function MessageDetails() {
           {photos.length > 0 ? (
             <div className="grid grid-cols-4 gap-1 border-t border-zinc-100 p-1">
               {photos.map((item, index) => (
-                <motion.a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <motion.button
+                  type="button"
                   key={item.messageId}
                   initial={{
                     opacity: 0,
@@ -276,6 +377,9 @@ export default function MessageDetails() {
                   transition={{
                     delay: 0.1 + index * 0.05,
                   }}
+                  onClick={() =>
+                    openImage(item.url, item.name)
+                  }
                   className="group aspect-square overflow-hidden bg-zinc-100"
                 >
                   <img
@@ -283,7 +387,7 @@ export default function MessageDetails() {
                     alt={item.name}
                     className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                   />
-                </motion.a>
+                </motion.button>
               ))}
             </div>
           ) : (
@@ -300,7 +404,10 @@ export default function MessageDetails() {
           )}
         </motion.section>
 
-        {/* ================= CHAT SETTINGS ================= */}
+        {/* =====================================================
+            CHAT SETTINGS
+        ===================================================== */}
+
         <motion.section
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -350,7 +457,10 @@ export default function MessageDetails() {
           />
         </motion.section>
 
-        {/* ================= VIDEOS ================= */}
+        {/* =====================================================
+            VIDEOS
+        ===================================================== */}
+
         {videos.length > 0 && (
           <motion.section
             initial={{
@@ -374,12 +484,13 @@ export default function MessageDetails() {
 
             <div className="space-y-2 border-t border-zinc-100 p-3">
               {videos.map((video) => (
-                <a
+                <button
+                  type="button"
                   key={video.messageId}
-                  href={video.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-2xl bg-zinc-50 p-3 transition hover:bg-zinc-100"
+                  onClick={() =>
+                    openVideo(video.url, video.name)
+                  }
+                  className="flex w-full items-center gap-3 rounded-2xl bg-zinc-50 p-3 text-left transition hover:bg-zinc-100 active:scale-[0.99]"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-200 text-zinc-600">
                     <Video size={18} />
@@ -399,13 +510,16 @@ export default function MessageDetails() {
                     size={16}
                     className="text-zinc-300"
                   />
-                </a>
+                </button>
               ))}
             </div>
           </motion.section>
         )}
 
-        {/* ================= DOCUMENTS ================= */}
+        {/* =====================================================
+            DOCUMENTS
+        ===================================================== */}
+
         {documents.length > 0 && (
           <motion.section
             initial={{
@@ -428,39 +542,64 @@ export default function MessageDetails() {
             </div>
 
             <div className="space-y-2 border-t border-zinc-100 p-3">
-              {documents.map((file) => (
-                <a
-                  key={file.messageId}
-                  href={file.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 rounded-2xl bg-zinc-50 p-3 transition hover:bg-zinc-100"
-                >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-200 text-zinc-600">
-                    <FileText size={18} />
-                  </div>
+              {documents.map((file) => {
+                const isPdf =
+                  file.name?.toLowerCase().endsWith(".pdf") ||
+                  file.type === "application/pdf";
 
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-zinc-900">
-                      {file.name}
-                    </p>
+                return (
+                  <button
+                    type="button"
+                    key={file.messageId}
+                    onClick={() => {
+                      if (isPdf) {
+                        openPdf(file.url, file.name);
+                      } else {
+                        window.open(
+                          file.url,
+                          "_blank",
+                          "noopener,noreferrer"
+                        );
+                      }
+                    }}
+                    className="flex w-full items-center gap-3 rounded-2xl bg-zinc-50 p-3 text-left transition hover:bg-zinc-100 active:scale-[0.99]"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-200 text-zinc-600">
+                      <FileText size={18} />
+                    </div>
 
-                    <p className="text-xs text-zinc-400">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-zinc-900">
+                        {file.name}
+                      </p>
 
-                  <ChevronRight
-                    size={16}
-                    className="text-zinc-300"
-                  />
-                </a>
-              ))}
+                      <p className="text-xs text-zinc-400">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+
+                    {isPdf ? (
+                      <ChevronRight
+                        size={16}
+                        className="text-zinc-300"
+                      />
+                    ) : (
+                      <ExternalLink
+                        size={16}
+                        className="text-zinc-300"
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </motion.section>
         )}
 
-        {/* ================= PRIVACY ================= */}
+        {/* =====================================================
+            PRIVACY
+        ===================================================== */}
+
         <motion.section
           initial={{
             opacity: 0,
@@ -489,7 +628,10 @@ export default function MessageDetails() {
           />
         </motion.section>
 
-        {/* ================= DANGER ZONE ================= */}
+        {/* =====================================================
+            DANGER ZONE
+        ===================================================== */}
+
         <motion.section
           initial={{
             opacity: 0,
@@ -549,6 +691,29 @@ export default function MessageDetails() {
           Conversation details
         </p>
       </div>
+
+      {/* =====================================================
+          MEDIA VIEWER
+      ===================================================== */}
+
+      <MediaViewer
+        isOpen={mediaViewer.isOpen}
+        onClose={closeMediaViewer}
+        url={mediaViewer.url}
+        type={mediaViewer.type}
+        name={mediaViewer.name}
+      />
+
+      {/* =====================================================
+          PDF VIEWER
+      ===================================================== */}
+
+      <PdfViewer
+        isOpen={pdfViewer.isOpen}
+        onClose={closePdfViewer}
+        url={pdfViewer.url}
+        name={pdfViewer.name}
+      />
     </main>
   );
 }
