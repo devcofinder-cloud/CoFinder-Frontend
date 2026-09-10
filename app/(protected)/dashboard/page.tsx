@@ -2,31 +2,32 @@
 
 import { useRouter } from "next/navigation";
 import {
-  Plus,
   ArrowUpRight,
   Sparkles,
   UserCheck,
   Eye,
   MessageSquare,
   FolderKanban,
-  CheckCircle2,
-  Clock,
   TrendingUp,
 } from "lucide-react";
 
 import { authStore } from "@/app/store/authStore";
 import { useEffect } from "react";
 
+import RecommendedFounders from "@/app/(protected)/dashboard/Dashboard-Components/RecommendedFounders";
+import SameArchetype from "@/app/(protected)/dashboard/Dashboard-Components/SameArchetype";
+import NearbyFounders from "@/app/(protected)/dashboard/Dashboard-Components/NearbyFounders";
+import DashboardSearch from "./Dashboard-Components/DashboardSearch";
+
 export default function DashboardPage() {
   const appRouter = useRouter();
 
-  // const user = authStore((state) => state.user);
   const user = authStore((state) => state.user);
   const fetchProfile = authStore((state) => state.fetchProfile);
 
   useEffect(() => {
     fetchProfile();
-  });
+  }, [fetchProfile]);
 
   const stats = [
     {
@@ -56,27 +57,6 @@ export default function DashboardPage() {
       trend: "2 active",
       icon: FolderKanban,
       isPrimary: false,
-    },
-  ];
-
-  const cofounders = [
-    {
-      name: "Aarav Sharma",
-      role: "Full Stack Developer",
-      tags: ["React", "Node.js", "AI"],
-      initials: "AS",
-    },
-    {
-      name: "Priya Kapoor",
-      role: "Product Designer",
-      tags: ["UI/UX", "Figma", "Design Systems"],
-      initials: "PK",
-    },
-    {
-      name: "Rohan Gupta",
-      role: "Growth Marketer",
-      tags: ["SEO", "GTM", "Analytics"],
-      initials: "RG",
     },
   ];
 
@@ -121,17 +101,15 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fafafa] p-6 sm:p-8 md:p-10 font-sans text-zinc-900">
+    <div className="min-h-screen bg-[#fafafa] p-4 font-sans text-zinc-900 sm:p-8 md:p-10">
       <div className="mx-auto max-w-7xl space-y-8">
-        {/* Header */}
         <header className="sm:flex sm:items-center sm:justify-between">
           <div className="w-full">
-            {/* Top Meta */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-4 w-4">
-                  <span className="absolute h-full w-full rounded-full bg-emerald-500 opacity-30 animate-ping" />
-                  <span className="relative h-4 w-4 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                  <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-500 opacity-30" />
+                  <span className="relative h-4 w-4 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                 </span>
 
                 <span className="text-[12px] font-medium uppercase tracking-[0.18em] text-zinc-400">
@@ -139,13 +117,19 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              {/* Mobile profile avatar */}
-              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-xs font-medium text-zinc-700 shadow-sm sm:hidden">
-                {user?.name?.charAt(0)?.toUpperCase() || "U"}
+              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-zinc-200 bg-white text-xs font-medium text-zinc-700 shadow-sm sm:hidden">
+                {user?.profileImage ? (
+                  <img
+                    src={user.profileImage}
+                    alt={user.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  user?.name?.charAt(0)?.toUpperCase() || "U"
+                )}
               </div>
             </div>
 
-            {/* Greeting */}
             <div className="mt-5 sm:mt-2">
               <h1 className="text-[29px] font-semibold leading-[1.15] tracking-[-0.035em] text-zinc-950 sm:text-4xl">
                 Welcome back,
@@ -156,15 +140,12 @@ export default function DashboardPage() {
               </h2>
             </div>
 
-            {/* Description */}
             <p className="mt-3 max-w-md text-[12px] leading-5 text-zinc-500 sm:text-sm">
               Here's what's happening across your founder ecosystem today.
             </p>
 
-            {/* Mobile divider */}
             <div className="mt-6 h-px w-full bg-zinc-100 sm:hidden" />
 
-            {/* Mobile quick context */}
             <div className="mt-4 flex items-center gap-2 sm:hidden">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100">
                 <TrendingUp className="h-3.5 w-3.5 text-zinc-600" />
@@ -176,9 +157,10 @@ export default function DashboardPage() {
             </div>
           </div>
         </header>
-        {/* Profile Progress--- hidden in desktop screen  */}
-        <div className="mt-4 block sm:hidden  rounded-2xl border border-zinc-200 bg-white p-4">
-          {/* Status */}
+        <DashboardSearch/>
+
+
+        <div className="mt-4 block rounded-2xl border border-zinc-200 bg-white p-4 sm:hidden">
           {(user?.completionStatus ?? 0) < 100 && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -198,15 +180,15 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Progress */}
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
             <div
               className="h-full rounded-full bg-zinc-900 transition-all duration-700 ease-out"
-              style={{ width: `${user?.completionStatus || 0}` }}
+              style={{
+                width: `${user?.completionStatus || 0}%`,
+              }}
             />
           </div>
 
-          {/* Bottom */}
           <div className="mt-4 flex items-center justify-between gap-4">
             <div>
               <p className="text-xs leading-relaxed text-zinc-500">
@@ -223,32 +205,21 @@ export default function DashboardPage() {
 
             <button
               onClick={() => appRouter.push("/questionnair")}
-              className="
-        shrink-0 rounded-xl
-        border border-zinc-900
-        bg-zinc-900
-        px-4 py-2.5
-        text-xs font-semibold text-white
-        transition-all duration-200
-        hover:-translate-y-0.5
-        hover:bg-zinc-800
-        hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]
-        active:translate-y-0 cursor-pointer hover:scale-105 
-      "
+              className="shrink-0 cursor-pointer rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] active:translate-y-0"
             >
               Complete Profile
             </button>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <section className="grid gap-5 grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {stats.map((item) => {
             const Icon = item.icon;
+
             return (
               <div
                 key={item.title}
-                className={`relative overflow-hidden rounded-3xl p-4 sm:p-6 transition-all duration-300 hover:-translate-y-1 ${
+                className={`relative overflow-hidden rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 sm:rounded-3xl sm:p-6 ${
                   item.isPrimary
                     ? "bg-zinc-900 text-white shadow-xl shadow-zinc-900/10"
                     : "border border-zinc-200/80 bg-white shadow-sm hover:border-zinc-300 hover:shadow-md"
@@ -274,7 +245,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-baseline justify-between sm:mt-4">
+                <div className="mt-3 sm:mt-4">
                   <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
                     {item.value}
                   </h2>
@@ -291,14 +262,10 @@ export default function DashboardPage() {
             );
           })}
         </section>
-
-        {/* Main Grid */}
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Main Content Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Recent Activity */}
-            <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6 lg:p-7">
-              {/* ================= HEADER ================= */}
+        
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:gap-8">
+          <main className="min-w-0 space-y-6 sm:space-y-8">
+            <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6 lg:p-7">
               <div className="mb-5 flex items-start justify-between gap-3 sm:mb-6 sm:items-center">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -321,25 +288,24 @@ export default function DashboardPage() {
                   className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 sm:text-xs"
                 >
                   <span>View all</span>
-                  <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 hidden sm:block" />
+                  <ArrowUpRight className="hidden h-3.5 w-3.5 sm:block" />
                 </button>
               </div>
 
-              {/* ================= ACTIVITIES ================= */}
               <div className="space-y-1">
                 {activities.map((activity) => (
                   <div
                     key={activity.id}
-                    className={`group relative flex gap-3 rounded-xl p-3 transition-all sm:gap-4 sm:p-4 ${
-                      activity.unread ? "bg-zinc-50" : "hover:bg-zinc-50/70"
+                    className={`group relative flex min-w-0 gap-3 rounded-xl p-3 transition-all sm:gap-4 sm:p-4 ${
+                      activity.unread
+                        ? "bg-zinc-50"
+                        : "hover:bg-zinc-50/70"
                     }`}
                   >
-                    {/* Unread indicator */}
                     {activity.unread && (
                       <span className="absolute left-1 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-zinc-950 sm:left-1.5" />
                     )}
 
-                    {/* ================= AVATAR ================= */}
                     <div className="relative shrink-0">
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-full text-[10px] font-bold sm:h-11 sm:w-11 sm:text-xs ${
@@ -351,7 +317,6 @@ export default function DashboardPage() {
                         {activity.avatar}
                       </div>
 
-                      {/* Activity type icon */}
                       <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-zinc-900 text-white shadow-sm">
                         {activity.type === "connection" && (
                           <UserCheck className="h-2.5 w-2.5" />
@@ -371,12 +336,10 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* ================= CONTENT ================= */}
                     <div className="min-w-0 flex-1">
-                      {/* Title + Time */}
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start justify-between gap-2 sm:gap-3">
                         <h3
-                          className={`min-w-0 text-xs leading-5 sm:text-sm ${
+                          className={`min-w-0 flex-1 text-xs leading-5 sm:text-sm ${
                             activity.unread
                               ? "font-bold text-zinc-950"
                               : "font-semibold text-zinc-800"
@@ -385,17 +348,15 @@ export default function DashboardPage() {
                           {activity.title}
                         </h3>
 
-                        <span className="shrink-0 pt-0.5 text-[9px] font-medium text-zinc-400 sm:text-[10px]">
+                        <span className="shrink-0 pt-0.5 text-[8px] font-medium text-zinc-400 sm:text-[10px]">
                           {activity.time}
                         </span>
                       </div>
 
-                      {/* Description */}
                       <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-zinc-500 sm:text-xs sm:leading-5">
                         {activity.description}
                       </p>
 
-                      {/* Match */}
                       {activity.match && (
                         <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[9px] font-bold text-zinc-600 shadow-sm">
                           <Sparkles className="h-2.5 w-2.5" />
@@ -407,80 +368,32 @@ export default function DashboardPage() {
                 ))}
               </div>
 
-              {/* ================= FOOTER ================= */}
               <div className="mt-4 border-t border-zinc-100 pt-4 sm:mt-5 sm:pt-5">
                 <button
                   onClick={() => appRouter.push("/activity")}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 py-3 text-[10px] font-bold text-zinc-600 transition-all hover:border-zinc-300 hover:bg-zinc-900 hover:text-white active:scale-[0.98] sm:text-xs"
                 >
                   View all activity
-                  <ArrowUpRight className="h-3.5 w-3.5 hidden sm:block" />
+                  <ArrowUpRight className="hidden h-3.5 w-3.5 sm:block" />
                 </button>
               </div>
             </section>
 
-            {/* Recommended Co-founders */}
-            <section className="rounded-3xl border border-zinc-200/80 bg-white p-6 sm:p-7 shadow-sm">
-              <div className="mb-6 flex  justify-between">
-                <div className="w-1/2">
-                  <h2 className="text-lg font-bold">Recommended Co-founders</h2>
-                  <p className="text-xs text-zinc-500">
-                    Handpicked matches based on your tech stack & vision
-                  </p>
-                </div>
-                <button
-                  onClick={() => appRouter.push("/connections")}
-                  className="flex  gap-1   text-xs font-semibold text-zinc-600 transition hover:text-black"
-                >
-                  <span>View All</span>
-                  <ArrowUpRight className="h-3.5 w-3.5 hidden sm:block" />
-                </button>
-              </div>
+            <div className="min-w-0">
+              <RecommendedFounders />
+            </div>
 
-              <div className="space-y-3">
-                {cofounders.map((person) => (
-                  <div
-                    key={person.name}
-                    className="group flex flex-col gap-4 rounded-2xl border border-zinc-100 bg-zinc-50/50 p-4 transition-all hover:border-zinc-300 hover:bg-white hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white shadow-sm transition group-hover:scale-105">
-                        {person.initials}
-                      </div>
+            <div className="min-w-0">
+              <SameArchetype />
+            </div>
 
-                      <div>
-                        <h3 className="font-semibold text-zinc-900">
-                          {person.name}
-                        </h3>
-                        <p className="text-xs text-zinc-500">{person.role}</p>
+            <div className="min-w-0">
+              <NearbyFounders />
+            </div>
+          </main>
 
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {person.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="rounded-md bg-zinc-200/60 px-2 py-0.5 text-[10px] font-medium text-zinc-600"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <button className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-800 transition hover:bg-zinc-900 hover:text-white sm:w-auto">
-                      Connect
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          {/* Sidebar Column */}
-          <div className="space-y-8">
-            {/* Profile Progress--- hidden in mobile screen  */}
-            <div className="mt-4  hidden sm:block rounded-2xl border border-zinc-200 bg-white p-4">
-              {/* Status */}
+          <aside className="min-w-0 space-y-6 sm:space-y-8">
+            <div className="hidden rounded-2xl border border-zinc-200 bg-white p-4 sm:block">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2.5 w-2.5">
@@ -498,7 +411,6 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              {/* Progress */}
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
                 <div
                   className="h-full rounded-full bg-zinc-900 transition-all duration-700 ease-out"
@@ -508,7 +420,6 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* Bottom */}
               <div className="mt-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-xs leading-relaxed text-zinc-500">
@@ -519,56 +430,52 @@ export default function DashboardPage() {
                   </p>
 
                   <p className="mt-1 text-[11px] font-medium text-zinc-400">
-                    28% remaining
+                    {Math.max(
+                      0,
+                      100 - (user?.completionStatus ?? 0)
+                    )}
+                    % remaining
                   </p>
                 </div>
 
                 <button
                   onClick={() => appRouter.push("/questionnair")}
-                  className="
-        shrink-0 rounded-xl
-        border border-zinc-900
-        bg-zinc-900
-        px-4 py-2.5
-        text-xs font-semibold text-white
-        transition-all duration-200
-        hover:-translate-y-0.5
-        hover:bg-zinc-800
-        hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)]
-        active:translate-y-0 cursor-pointer hover:scale-105 
-      "
+                  className="shrink-0 cursor-pointer rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] active:translate-y-0"
                 >
                   Complete Profile
                 </button>
               </div>
             </div>
-            {/* AI Suggestion Card */}
-            <section className="relative overflow-hidden mb-20 sm:mb-0 rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 p-6 text-white shadow-xl shadow-zinc-900/10">
+
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 p-5 text-white shadow-xl shadow-zinc-900/10 sm:p-6">
               <div className="flex items-center gap-2 text-zinc-400">
                 <Sparkles className="h-4 w-4 text-white" />
+
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em]">
                   AI Suggestion
                 </p>
               </div>
 
-              <h2 className="mt-3 text-lg font-bold leading-snug">
+              <h2 className="mt-3 text-lg font-bold leading-snug sm:text-xl">
                 Complete your founder bio.
               </h2>
 
               <p className="mt-2 text-xs leading-relaxed text-zinc-300">
                 Profiles with a detailed bio receive{" "}
-                <span className="font-semibold text-white">2.4x more</span>{" "}
+                <span className="font-semibold text-white">
+                  2.4x more
+                </span>{" "}
                 founder matches.
               </p>
 
               <button
                 onClick={() => appRouter.push("/profile")}
-                className="mt-5 w-full cursor-pointer rounded-xl bg-white py-2.5 text-xs font-bold text-zinc-900 transition hover:bg-zinc-100 active:scale-98"
+                className="mt-5 w-full cursor-pointer rounded-xl bg-white py-2.5 text-xs font-bold text-zinc-900 transition hover:bg-zinc-100 active:scale-[0.98]"
               >
                 Improve Profile
               </button>
             </section>
-          </div>
+          </aside>
         </div>
       </div>
     </div>

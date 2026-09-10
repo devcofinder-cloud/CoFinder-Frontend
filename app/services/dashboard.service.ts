@@ -16,3 +16,43 @@ export const getUserProfileById=(userId:String)=>{
 export const getPostsByUserId = (userId:string)=>{
     return api.get(`/dashboard/profile/posts/${userId}`)
 }
+
+
+
+export const getRecommendedUsers = async (limit = 10) => {
+  const response = await api.get(
+    `/dashboard/recommended?limit=${limit}`
+  );
+
+  return response.data;
+};
+
+
+export const getSameArchetypeUsers = async (limit = 10) => {
+  const response = await api.get(
+    `/dashboard/same-archetype?limit=${limit}`
+  );
+
+  return response.data;
+};
+
+
+export const getNearbyUsers = async (limit = 10) => {
+  const response = await api.get(
+    `/dashboard/nearby?limit=${limit}`
+  );
+
+  return response.data;
+};
+
+
+export const universalSearch = async (
+    query = "",
+    limit = 10
+) => {
+    const response = await api.get(
+        `/dashboard/search?q=${encodeURIComponent(query)}&limit=${limit}`
+    );
+
+    return response.data;
+};
