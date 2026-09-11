@@ -8,6 +8,10 @@ import {
   getNearbyUsers,
   universalSearch,
   getPostById,
+  togglePostLike,
+  addPostComment,
+  getPostComments,
+  deletePostComment,
 } from "../services/dashboard.service";
 import { getProfessionalProfile } from "../services/auth.service";
 
@@ -182,6 +186,13 @@ interface DashboardState {
   loadingSameArchetypeUsers: boolean;
   loadingNearbyUsers: boolean;
 
+  toggleLike: (postId: string, userId: string) => Promise<any>;
+
+  addComment: (postId: string, content: string) => Promise<any>;
+
+  getComments: (postId: string) => Promise<any[]>;
+
+  deleteComment: (commentId: string, postId: string) => Promise<any>;
   fetchPosts: () => Promise<void>;
 
   fetchProfileById: (userId: string) => Promise<void>;
@@ -426,5 +437,133 @@ export const dashboardStore = create<DashboardState>((set) => ({
       post: null,
       loadingPost: false,
     });
+  },
+
+  toggleLike: async (postId: string, userId: string) => {
+    try {
+      const res = await togglePostLike(postId);
+
+      if (res.success) {
+        const { liked, likesCount } = res.data;
+
+        set((state) => {
+          const updatePost = (post: Post): Post => {
+            if (post._id !== postId) {
+              return post;
+            }
+
+            let updatedLikes = [...post.likes];
+
+            if (liked) {
+              if (!updatedLikes.includes(userId)) {
+                updatedLikes.push(userId);
+              }
+            } else {
+              updatedLikes = updatedLikes.filter((id) => id !== userId);
+            }
+
+            return {
+              ...post,
+              likes: updatedLikes,
+            };
+          };
+
+          return {
+            posts: state.posts.map(updatePost),
+
+            userPosts: state.userPosts.map(updatePost),
+
+            post:
+              state.post?._id === postId ? updatePost(state.post) : state.post,
+          };
+        });
+      }
+
+      return res;
+    } catch (error) {
+      console.error("Toggle like error:", error);
+      throw error;
+    }
+  },
+
+  addComment: async (postId: string, content: string) => {
+    try {
+      const res = await addPostComment(postId, content);
+
+      if (res.success) {
+        set((state) => {
+          const updatePost = (post: Post): Post => {
+            if (post._id !== postId) {
+              return post;
+            }
+
+            return {
+              ...post,
+              commentsCount: post.commentsCount + 1,
+            };
+          };
+
+          return {
+            posts: state.posts.map(updatePost),
+
+            userPosts: state.userPosts.map(updatePost),
+
+            post:
+              state.post?._id === postId ? updatePost(state.post) : state.post,
+          };
+        });
+      }
+
+      return res;
+    } catch (error) {
+      console.error("Add comment error:", error);
+      throw error;
+    }
+  },
+
+  getComments: async (postId: string) => {
+    try {
+      const res = await getPostComments(postId);
+
+      return res.data?.data || res.data || [];
+    } catch (error) {
+      console.error("Get comments error:", error);
+      throw error;
+    }
+  },
+
+  deleteComment: async (commentId: string, postId: string) => {
+    try {
+      const res = await deletePostComment(commentId);
+
+      if (res.success) {
+        set((state) => {
+          const updatePost = (post: Post): Post => {
+            if (post._id !== postId) {
+              return post;
+            }
+
+            return {
+              ...post,
+              commentsCount: Math.max(0, post.commentsCount - 1),
+            };
+          };
+
+          return {
+            posts: state.posts.map(updatePost),
+
+            userPosts: state.userPosts.map(updatePost),
+
+            post:
+              state.post?._id === postId ? updatePost(state.post) : state.post,
+          };
+        });
+      }
+
+      return res;
+    } catch (error) {
+      console.error("Delete comment error:", error);
+      throw error;
+    }
   },
 }));

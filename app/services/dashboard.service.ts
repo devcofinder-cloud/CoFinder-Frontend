@@ -70,3 +70,33 @@ export const recordProfileView = (profileId: string) => {
 export const getProfileViewCount = (profileId: string) => {
   return api.get(`/profile-count/${profileId}/count`);
 };
+
+
+export const togglePostLike = async (postId: string) => {
+  const response = await api.post(`/posts/${postId}/like`);
+  return response.data;
+};
+
+export const addPostComment = async (
+  postId: string,
+  content: string
+) => {
+  const response = await api.post(`/posts/${postId}/comments`, {
+    content,
+  });
+
+  return response.data;
+};
+
+export const getPostComments = async (postId: string) => {
+  const response = await api.get(`/posts/${postId}/comments`);
+  return response.data;
+};
+
+export const deletePostComment = async (commentId: string) => {
+  const response = await api.delete(
+    `/posts/comments/${commentId}`
+  );
+
+  return response.data;
+};
