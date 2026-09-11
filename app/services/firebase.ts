@@ -1,4 +1,6 @@
-import { getApps, initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+
 import {
   getMessaging,
   isSupported,
@@ -35,5 +37,9 @@ export const getFirebaseMessaging =
 
     return getMessaging(app);
   };
+
+
+  export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
 
 export default app;

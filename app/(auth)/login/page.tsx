@@ -6,11 +6,13 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/app/services/firebase";
 
 
 import { useRouter } from "next/navigation";
 
-import { login } from "@/app/services/auth.service";
+import { googleLogin, login } from "@/app/services/auth.service";
 import ResponseModal from "../components/ResponseModal";
 import { useState } from "react";
 import { authStore } from "@/app/store/authStore";
@@ -84,6 +86,68 @@ export default function LoginPage() {
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
+
+
+const handleGoogleLogin = async () => {
+  setPopup({
+    open: true,
+    type: "loading",
+    title: "Signing in with Google",
+    message: "Please wait while we authenticate your account...",
+  });
+
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+
+    const firebaseUser = result.user;
+
+    const firebaseToken = await firebaseUser.getIdToken();
+
+    // Send Firebase token to your backend
+    const res = await googleLogin(firebaseToken);
+
+    if (res.success) {
+      setUser(res.data.user);
+
+      localStorage.setItem("token", res.data.token);
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(res.data.user)
+      );
+
+      setPopup({
+        open: true,
+        type: "success",
+        title: "Login Successful!",
+        message: "Welcome back to Cofinder.",
+      });
+
+      setTimeout(() => {
+        appRouter.push("/dashboard");
+      }, 1500);
+    } else {
+      setPopup({
+        open: true,
+        type: "error",
+        title: "Login Failed",
+        message: res.message || "Something went wrong.",
+      });
+    }
+  } catch (error: any) {
+    console.error("Google Login Error:", error);
+
+    setPopup({
+      open: true,
+      type: "error",
+      title: "Google Login Failed",
+      message:
+        error?.response?.data?.message ||
+        error?.message ||
+        "Unable to sign in with Google.",
+    });
+  }
+};
 
   return (
     // <div className="min-h-screen bg-[#09090b] flex items-center justify-center px-4 sm:px-6 relative overflow-hidden selection:bg-zinc-800 selection:text-white">
@@ -434,7 +498,10 @@ export default function LoginPage() {
 
             <div className="space-y-3">
               {/* Premium Light style OAuth button */}
-              <button className="w-full h-12 flex items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700 hover:text-zinc-900 text-sm font-medium transition-all duration-200 active:scale-[0.99] shadow-sm">
+              <button
+              type="submit"
+              onClick={handleGoogleLogin}
+              className="w-full h-12 flex items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700 hover:text-zinc-900 text-sm font-medium transition-all duration-200 active:scale-[0.99] shadow-sm">
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
                   <path
                     fill="currentColor"

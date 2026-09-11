@@ -101,7 +101,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fafafa] p-4 font-sans text-zinc-900 sm:p-8 md:p-10">
+    <div className="min-h-screen bg-[#fafafa] p-4 font-sans text-zinc-900 sm:p-8 md:p-10 mb-20">
       <div className="mx-auto max-w-7xl space-y-8">
         <header className="sm:flex sm:items-center sm:justify-between">
           <div className="w-full">

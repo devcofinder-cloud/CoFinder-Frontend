@@ -132,6 +132,15 @@ export interface UpdateProfessionalProfilePayload {
   };
 }
 
+
+export const googleLogin = async (firebaseToken: string) => {
+  const response = await api.post("/user/google-login", {
+    firebaseToken,
+  });
+
+  return response.data;
+};
+
 export const login = async (data: LoginPayload) => {
   const response = await api.post("/user/login", data);
   return response.data;
