@@ -141,6 +141,18 @@ export const googleLogin = async (firebaseToken: string) => {
   return response.data;
 };
 
+
+
+export const googleRegister = async (firebaseToken: string) => {
+  const response = await api.post("/user/google-register", {
+    firebaseToken,
+  });
+
+  return response.data;
+};
+
+
+
 export const login = async (data: LoginPayload) => {
   const response = await api.post("/user/login", data);
   return response.data;

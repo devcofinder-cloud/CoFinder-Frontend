@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -23,14 +24,35 @@ const NearbyFounders = () => {
           <div className="mt-2 h-3 w-56 animate-pulse rounded bg-zinc-100" />
         </div>
 
-        <div className="flex gap-3 overflow-hidden">
+        {/* Mobile Skeleton */}
+        <div className="space-y-2 sm:hidden">
           {[1, 2, 3].map((item) => (
             <div
               key={item}
-              className="min-w-[260px] rounded-xl border border-zinc-100 p-4"
+              className="flex items-center gap-3 rounded-xl border border-zinc-100 p-3"
+            >
+              <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-zinc-200" />
+
+              <div className="min-w-0 flex-1">
+                <div className="h-3.5 w-28 animate-pulse rounded bg-zinc-200" />
+                <div className="mt-2 h-3 w-36 animate-pulse rounded bg-zinc-100" />
+              </div>
+
+              <div className="h-8 w-20 animate-pulse rounded-lg bg-zinc-100" />
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Skeleton */}
+        <div className="hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="rounded-xl border border-zinc-100 p-4"
             >
               <div className="flex items-center gap-3">
                 <div className="h-11 w-11 animate-pulse rounded-full bg-zinc-200" />
+
                 <div className="flex-1">
                   <div className="h-4 w-28 animate-pulse rounded bg-zinc-200" />
                   <div className="mt-2 h-3 w-20 animate-pulse rounded bg-zinc-100" />
@@ -55,6 +77,7 @@ const NearbyFounders = () => {
             <h2 className="text-sm font-semibold text-zinc-900">
               Nearby Founders
             </h2>
+
             <p className="mt-1 text-xs text-zinc-500">
               No nearby founders found right now.
             </p>
@@ -66,6 +89,7 @@ const NearbyFounders = () => {
 
   return (
     <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5">
+      {/* Header */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -90,7 +114,8 @@ const NearbyFounders = () => {
         </button>
       </div>
 
-      <div className="flex snap-x gap-3 overflow-x-auto pb-1 scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3">
+      {/* ================= MOBILE LIST ================= */}
+      <div className="space-y-2 sm:hidden">
         {nearbyUsers.map((user) => {
           const initials =
             user.name
@@ -103,14 +128,66 @@ const NearbyFounders = () => {
           return (
             <div
               key={user._id}
-              className="w-[270px] shrink-0 snap-start rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 transition hover:border-zinc-300 sm:w-auto"
+              className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3 transition active:scale-[0.99]"
+            >
+              {/* Profile Image */}
+              {user.profileImage ? (
+                <img
+                  src={user.profileImage}
+                  alt={user.name}
+                  className="h-11 w-11 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black text-xs font-semibold text-white">
+                  {initials}
+                </div>
+              )}
+
+              {/* Name + Email */}
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-sm font-semibold text-zinc-900">
+                  {user.name}
+                </h3>
+
+                <p className="mt-0.5 truncate text-xs text-zinc-500">
+                  {user.email || user.archetype || "Founder"}
+                </p>
+              </div>
+
+              {/* View Profile */}
+              <button
+                type="button"
+                className="shrink-0 rounded-lg bg-black px-3 py-2 text-[11px] font-medium text-white transition active:scale-95"
+              >
+                View Profile
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ================= DESKTOP CARDS ================= */}
+      <div className="hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+        {nearbyUsers.map((user) => {
+          const initials =
+            user.name
+              ?.split(" ")
+              .map((word) => word[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase() || "U";
+
+          return (
+            <div
+              key={user._id}
+              className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-4 transition hover:border-zinc-300"
             >
               <div className="flex items-center gap-3">
                 {user.profileImage ? (
                   <img
                     src={user.profileImage}
                     alt={user.name}
-                    className="h-11 w-11 rounded-full object-cover"
+                    className="h-11 w-11 shrink-0 rounded-full object-cover"
                   />
                 ) : (
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black text-xs font-semibold text-white">
@@ -134,6 +211,7 @@ const NearbyFounders = () => {
               {user.location && (
                 <div className="mt-3 flex items-center gap-1.5 text-xs text-zinc-500">
                   <MapPin className="h-3.5 w-3.5" />
+
                   <span className="truncate">{user.location}</span>
                 </div>
               )}

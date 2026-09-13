@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { dashboardStore } from "@/app/store/dashboardStore";
 import { useRouter } from "next/navigation";
+import { FaComment } from "react-icons/fa";
 
 const categories = [
   "All",
@@ -58,12 +59,6 @@ export default function ExplorePage() {
     fetchPosts();
   }, [fetchPosts]);
 
-  /*
-   * Store se aane wale posts ko ExplorePost type me treat kar rahe hain.
-   *
-   * Agar tumhare Zustand store me posts ka type already properly defined hai
-   * toh ye cast hata bhi sakte ho.
-   */
   const explorePosts = (posts || []) as ExplorePost[];
 
   const filteredPosts = useMemo(() => {
@@ -277,10 +272,14 @@ export default function ExplorePage() {
    POST CARD
 ========================================================= */
 
+
 function FounderPostCard({ post }: { post: ExplorePost }) {
   const authorName = post.author?.name || "Unknown Founder";
 
-  const appRouter = useRouter()
+  const appRouter = useRouter();
+
+  // Temporary UI state
+  const [liked, setLiked] = useState(false);
 
   const initials = authorName
     .split(" ")
@@ -294,6 +293,13 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
     month: "short",
     year: "numeric",
   });
+
+  // Temporary counts
+  // Later backend se directly aayenge
+  const baseLikes = 0;
+  const baseComments = 0;
+
+  const likesCount = baseLikes + (liked ? 1 : 0);
 
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/50">
@@ -311,8 +317,11 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
         {/* ================= PROFILE ================= */}
 
         <div
-        onClick={()=>appRouter.push(`/user-profile/${post?.author?._id}`)}
-        className="flex items-center gap-3">
+          onClick={() =>
+            appRouter.push(`/user-profile/${post?.author?._id}`)
+          }
+          className="flex cursor-pointer items-center gap-3"
+        >
           {/* Profile Image */}
 
           {post.author?.profileImage ? (
@@ -338,7 +347,6 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
 
             <div className="mt-1 flex items-center gap-1 text-[10px] text-zinc-400">
               <Clock3 size={11} />
-
               {formattedDate}
             </div>
           </div>
@@ -346,7 +354,9 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
 
         {/* ================= POST CONTENT ================= */}
 
-        <div className="mt-5 rounded-xl bg-zinc-50 p-4">
+        <div
+        onClick={()=>appRouter.push(`/post/${post._id}`)}
+        className="mt-5 rounded-xl bg-zinc-50 p-4">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
             <User size={12} />
             Founder Post
@@ -428,28 +438,69 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
         )}
       </div>
 
-      {/* ================= FOOTER ================= */}
+      {/* ================= SOCIAL FOOTER ================= */}
 
-      <div className="mt-auto flex items-center justify-between border-t border-zinc-100 px-5 py-4">
-        <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
-          <Clock3 size={12} />
-          Posted {formattedDate}
+      <div className="mt-auto border-t border-zinc-100 px-5 py-3">
+        <div className="flex items-center justify-between">
+          {/* LEFT - LIKE + COMMENT */}
+
+          <div className="flex items-center gap-1">
+            {/* Like */}
+
+            <button
+              type="button"
+              onClick={() => setLiked((prev) => !prev)}
+              className={`group/like flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs transition ${
+                liked
+                  ? "text-red-500 hover:bg-red-50"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-red-500"
+              }`}
+            >
+              <span
+                className={`text-base leading-none transition-transform ${
+                  liked ? "scale-110" : "group-hover/like:scale-110"
+                }`}
+              >
+                {liked ? "♥" : "♡"}
+              </span>
+
+              <span className="font-medium">
+                {likesCount}
+              </span>
+            </button>
+
+            {/* Comment */}
+
+            <button
+              type="button"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
+            >
+              <span className="text-base leading-none"><FaComment/></span>
+
+              <span className="font-medium">
+                {baseComments}
+              </span>
+            </button>
+          </div>
+
+          {/* RIGHT - VIEW PROFILE */}
+
+          <button
+            type="button"
+            onClick={() => {
+              appRouter.push(`/user-profile/${post.author._id}`);
+            }}
+            className="flex items-center gap-1.5 rounded-lg bg-zinc-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800"
+          >
+            View profile
+            <ArrowUpRight size={14} />
+          </button>
         </div>
-
-        <button
-          className="flex items-center gap-1.5 rounded-lg bg-zinc-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800"
-          onClick={() => {
-            appRouter.push(`/user-profile/${post.author._id}`)
-            console.log("Open profile:", post.author._id);
-          }}
-        >
-          View profile
-          <ArrowUpRight size={14} />
-        </button>
       </div>
     </article>
   );
 }
+
 
 /* =========================================================
    FILTER
