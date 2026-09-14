@@ -12,8 +12,10 @@ import {
   addPostComment,
   getPostComments,
   deletePostComment,
+ 
 } from "../services/dashboard.service";
 import { getProfessionalProfile } from "../services/auth.service";
+import {toggleSavePost, getSavedPosts} from '../services/posts.service'
 
 export interface SearchUser extends User {}
 
@@ -58,6 +60,7 @@ export interface Post {
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
+  isSaved?: boolean;
 }
 
 export interface User {
@@ -208,6 +211,8 @@ interface DashboardState {
   fetchSameArchetypeUsers: (limit?: number) => Promise<void>;
 
   fetchNearbyUsers: (limit?: number) => Promise<void>;
+  savedPosts: Post[];
+  loadingSavedPosts: boolean;
 }
 
 export const dashboardStore = create<DashboardState>((set) => ({
@@ -215,6 +220,9 @@ export const dashboardStore = create<DashboardState>((set) => ({
   loadingPosts: false,
   post: null,
   loadingPost: false,
+
+  savedPosts: [],
+  loadingSavedPosts: false,
 
   userData: null,
   loadingProfile: false,
@@ -566,4 +574,79 @@ export const dashboardStore = create<DashboardState>((set) => ({
       throw error;
     }
   },
+
+  toggleSave: async (postId: string) => {
+    try {
+      const res = await toggleSavePost(postId);
+
+      if (res.success) {
+        const saved = res.data.saved;
+
+        set((state) => {
+          const updatePost = (post: Post): Post => {
+            if (post._id !== postId) {
+              return post;
+            }
+
+            return {
+              ...post,
+              isSaved: saved,
+            };
+          };
+
+          return {
+            posts: state.posts.map(updatePost),
+
+            userPosts: state.userPosts.map(updatePost),
+
+            post:
+              state.post?._id === postId ? updatePost(state.post) : state.post,
+
+            savedPosts: saved
+              ? state.savedPosts.some((p) => p._id === postId)
+                ? state.savedPosts
+                : state.savedPosts
+              : state.savedPosts.filter((p) => p._id !== postId),
+          };
+        });
+      }
+
+      return res;
+    } catch (error) {
+      console.error("Toggle save error:", error);
+      throw error;
+    }
+  },
+
+  fetchSavedPosts: async () => {
+  try {
+    set({ loadingSavedPosts: true });
+
+    const res = await getSavedPosts();
+
+    const posts =
+      res.data?.data ||
+      res.data ||
+      [];
+
+    set({
+      savedPosts: Array.isArray(posts)
+        ? posts
+        : [],
+    });
+
+    return posts;
+  } catch (error) {
+    console.error(
+      "Fetch saved posts error:",
+      error
+    );
+
+    throw error;
+  } finally {
+    set({
+      loadingSavedPosts: false,
+    });
+  }
+},
 }));

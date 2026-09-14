@@ -24,3 +24,18 @@ export const deletePost = (id:String)=>{
 export const getPostById = (id:String)=>{
     return api.get(`/posts/${id}`)
 }
+
+
+export const toggleSavePost = async (postId: string) => {
+  const response = await api.post(
+    `/posts/${postId}/save`
+  );
+
+  return response.data;
+};
+
+export const getSavedPosts = async () => {
+  const response = await api.get("/posts/saved");
+
+  return response.data;
+};
