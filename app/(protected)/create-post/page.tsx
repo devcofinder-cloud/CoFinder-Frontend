@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -455,6 +456,8 @@ function MyPostCard({
   onEdit: () => void;
   onDeleted: (id: string) => void;
 }) {
+  const router = useRouter();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -476,6 +479,12 @@ function MyPostCard({
     }
   };
 
+  const handleOpenPost = () => {
+    if (deleting) return;
+
+    router.push(`/post/${post._id}`);
+  };
+
   return (
     <motion.article
       layout
@@ -483,7 +492,8 @@ function MyPostCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ delay: index * 0.06 }}
-      className="mb-4 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm"
+      onClick={handleOpenPost}
+      className="group mb-4 cursor-pointer overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition hover:border-zinc-300 hover:shadow-md"
     >
       {/* TOP */}
       <div className="flex items-center justify-between px-4 pt-4 sm:px-5 sm:pt-5">
@@ -510,10 +520,11 @@ function MyPostCard({
         </div>
 
         {/* MENU */}
-        <div className="relative">
+        <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button
+            type="button"
             disabled={deleting}
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => setMenuOpen((prev) => !prev)}
             className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-black disabled:opacity-50"
           >
             {deleting ? (
@@ -543,6 +554,7 @@ function MyPostCard({
                 className="absolute right-0 top-10 z-20 w-40 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-xl"
               >
                 <button
+                  type="button"
                   onClick={() => {
                     setMenuOpen(false);
                     onEdit();
@@ -556,6 +568,7 @@ function MyPostCard({
                 <div className="my-1 border-t border-zinc-100" />
 
                 <button
+                  type="button"
                   onClick={() => {
                     setMenuOpen(false);
                     setShowDelete(true);
@@ -574,15 +587,26 @@ function MyPostCard({
       {/* CONTENT */}
       {post.content && (
         <div className="px-4 pb-4 pt-4 sm:px-5">
-          <p className="whitespace-pre-line text-sm leading-6 text-zinc-800">
-            {post.content}
-          </p>
+          <div
+            className="max-h-[180px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-300 scrollbar-track-transparent"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="whitespace-pre-line break-words text-sm leading-6 text-zinc-800">
+              {post.content}
+            </p>
+          </div>
+
+          {post.content.length > 700 && (
+            <p className="mt-2 text-[10px] font-medium text-zinc-400">
+              Scroll to read more
+            </p>
+          )}
         </div>
       )}
 
       {/* MEDIA */}
       {post.media?.length > 0 && (
-        <div className="px-4 pb-4 sm:px-5">
+        <div className="px-4 pb-4 sm:px-5" onClick={(e) => e.stopPropagation()}>
           <div
             className={`grid gap-2 ${
               post.media.length === 1 ? "grid-cols-1" : "grid-cols-2"
@@ -609,15 +633,19 @@ function MyPostCard({
           </span>
         </div>
 
-        <button className="flex items-center gap-1 font-semibold text-zinc-500 transition hover:text-black">
-          <BarChart3 size={13} />
-          Analytics
-        </button>
+        <span className="flex items-center gap-1 font-semibold text-zinc-500">
+          <Eye size={13} />
+          View Post
+        </span>
       </div>
 
       {/* ACTIONS */}
-      <div className="grid grid-cols-2 border-t border-zinc-100">
+      <div
+        className="grid grid-cols-2 border-t border-zinc-100"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
+          type="button"
           onClick={onEdit}
           className="flex h-11 items-center justify-center gap-2 border-r border-zinc-100 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50 hover:text-black"
         >
@@ -626,6 +654,7 @@ function MyPostCard({
         </button>
 
         <button
+          type="button"
           onClick={() => setShowDelete(true)}
           disabled={deleting}
           className="flex h-11 items-center justify-center gap-2 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50 hover:text-red-500 disabled:opacity-50"
@@ -634,6 +663,8 @@ function MyPostCard({
           Delete
         </button>
       </div>
+
+      {/* DELETE MODAL */}
       <AnimatePresence>
         {showDelete && (
           <DeleteConfirmModal
