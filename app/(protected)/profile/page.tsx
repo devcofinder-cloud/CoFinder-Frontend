@@ -34,6 +34,7 @@ import {
 } from 'react-icons/fa'
 import { authStore } from "@/app/store/authStore";
 import { useRouter } from "next/navigation";
+import MyPostsPage from "../create-post/page";
 
 /* ------------------------------------------------------------------ */
 /* Static Data                                                        */
@@ -569,119 +570,8 @@ export default function ProfilePage() {
             {activeTab === "Ideas" && (
               <TabPanel key="ideas">
                 <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                  <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-black">
-                      Idea Showcase
-                    </h2>
-
-                    <p className="mt-1 text-sm text-neutral-500">
-                      Active concepts & ongoing venture explorations
-                    </p>
-                  </div>
-
-                  <button className="inline-flex items-center justify-center gap-2 rounded-full bg-black px-6 py-3 text-xs font-bold text-white transition-opacity hover:opacity-90">
-                    <Plus className="h-4 w-4" />
-                    Post New Idea
-                  </button>
-                </div>
-
-                <div className="space-y-6">
-                  {ideas.map((idea, i) => {
-                    const isLiked = likedIdeas[idea.id];
-                    const isVoted = votedIdeas[idea.id];
-                    const isBookmarked = bookmarkedIdeas[idea.id];
-
-                    return (
-                      <motion.article
-                        key={idea.id}
-                        initial={{
-                          opacity: 0,
-                          y: 15,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                        }}
-                        transition={{
-                          duration: 0.4,
-                          delay: 0.05 * i,
-                        }}
-                        className="rounded-3xl border border-black/10 bg-white p-8 shadow-sm"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="rounded-full bg-neutral-100 px-3.5 py-1 text-xs font-bold text-black">
-                            {idea.tag}
-                          </span>
-
-                          <button
-                            onClick={() => toggleBookmark(idea.id)}
-                            className="text-neutral-400 transition-colors hover:text-black"
-                          >
-                            <Bookmark
-                              className={`h-4 w-4 ${
-                                isBookmarked
-                                  ? "fill-black text-black"
-                                  : ""
-                              }`}
-                            />
-                          </button>
-                        </div>
-
-                        <h3 className="mt-4 text-2xl font-bold text-black">
-                          {idea.title}
-                        </h3>
-
-                        <p className="mt-3 text-sm leading-relaxed text-neutral-600">
-                          {idea.body}
-                        </p>
-
-                        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-black/10 pt-6">
-                          <div className="flex items-center gap-6 text-xs font-semibold text-neutral-600">
-                            {/* Like */}
-                            <button
-                              onClick={() => toggleLike(idea.id)}
-                              className="flex items-center gap-2 hover:text-black"
-                            >
-                              <Heart
-                                className={`h-4 w-4 ${
-                                  isLiked
-                                    ? "fill-black text-black"
-                                    : ""
-                                }`}
-                              />
-
-                              <span>{idea.likes}</span>
-                            </button>
-
-                            {/* Comments */}
-                            <span className="flex cursor-pointer items-center gap-2 hover:text-black">
-                              <MessageSquare className="h-4 w-4" />
-                              {idea.comments}
-                            </span>
-
-                            {/* Vote */}
-                            <button
-                              onClick={() => toggleVote(idea.id)}
-                              className="flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 hover:bg-neutral-200"
-                            >
-                              <ArrowUp
-                                className={`h-4 w-4 ${
-                                  isVoted ? "stroke-[3]" : ""
-                                }`}
-                              />
-
-                              <span>{idea.votes}</span>
-                            </button>
-                          </div>
-
-                          <button className="rounded-full bg-black px-4 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90">
-                            Interested
-                          </button>
-                        </div>
-                      </motion.article>
-                    );
-                  })}
-                </div>
+                 <MyPostsPage/>
+                 </div>
               </TabPanel>
             )}
           </AnimatePresence>

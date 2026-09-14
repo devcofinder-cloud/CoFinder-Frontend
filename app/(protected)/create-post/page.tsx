@@ -205,7 +205,7 @@ export default function MyPostsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f7f7f7] text-black">
+    <main className="min-h-screen bg-white text-black">
       {/* Background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-40 top-20 h-80 w-80 rounded-full bg-zinc-200/50 blur-3xl" />

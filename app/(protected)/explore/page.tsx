@@ -44,6 +44,8 @@ type ExplorePost = {
   author: PostAuthor;
   content: string;
   media: PostMedia[];
+  likes: string[];
+  commentsCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -275,11 +277,33 @@ export default function ExplorePage() {
 
 function FounderPostCard({ post }: { post: ExplorePost }) {
   const authorName = post.author?.name || "Unknown Founder";
-
   const appRouter = useRouter();
 
-  // Temporary UI state
-  const [liked, setLiked] = useState(false);
+  const { toggleLike, addComment, getComments } = dashboardStore();
+
+  const [userId, setUserId] = useState("");
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentLoading, setCommentLoading] = useState(false);
+
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+
+    if (user) {
+      try {
+        const parsedUser = JSON.parse(user);
+        setUserId(parsedUser?._id || parsedUser?.id || "");
+      } catch {
+        setUserId("");
+      }
+    }
+  }, []);
+
+  const liked = userId ? post.likes?.includes(userId) : false;
+  const likesCount = post.likes?.length || 0;
+  const commentsCount = post.commentsCount || 0;
 
   const initials = authorName
     .split(" ")
@@ -294,17 +318,58 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
     year: "numeric",
   });
 
-  // Temporary counts
-  // Later backend se directly aayenge
-  const baseLikes = 0;
-  const baseComments = 0;
+  const handleLike = async () => {
+    if (!userId) return;
 
-  const likesCount = baseLikes + (liked ? 1 : 0);
+    try {
+      await toggleLike(post._id, userId);
+    } catch (error) {
+      console.error("Like failed:", error);
+    }
+  };
+
+  const handleOpenComments = async () => {
+    setCommentOpen((prev) => !prev);
+
+    if (!commentOpen) {
+      try {
+        setCommentsLoading(true);
+
+        const data = await getComments(post._id);
+
+        setComments(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Failed to load comments:", error);
+      } finally {
+        setCommentsLoading(false);
+      }
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!commentText.trim()) return;
+
+    try {
+      setCommentLoading(true);
+
+      const res = await addComment(post._id, commentText.trim());
+
+      if (res?.success) {
+        setCommentText("");
+
+        const data = await getComments(post._id);
+
+        setComments(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error("Comment failed:", error);
+    } finally {
+      setCommentLoading(false);
+    }
+  };
 
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/50">
-      {/* ================= MATCH / ARCHETYPE ================= */}
-
       {post.author?.archetype && (
         <div className="absolute right-5 top-5 z-10">
           <div className="rounded-full border border-zinc-200 bg-white/90 px-2.5 py-1 text-[10px] font-bold text-zinc-700 backdrop-blur">
@@ -314,7 +379,7 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
       )}
 
       <div className="p-5">
-        {/* ================= PROFILE ================= */}
+        {/* PROFILE */}
 
         <div
           onClick={() =>
@@ -322,8 +387,6 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
           }
           className="flex cursor-pointer items-center gap-3"
         >
-          {/* Profile Image */}
-
           {post.author?.profileImage ? (
             <img
               src={post.author.profileImage}
@@ -352,11 +415,12 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
           </div>
         </div>
 
-        {/* ================= POST CONTENT ================= */}
+        {/* POST CONTENT */}
 
         <div
-        onClick={()=>appRouter.push(`/post/${post._id}`)}
-        className="mt-5 rounded-xl bg-zinc-50 p-4">
+          onClick={() => appRouter.push(`/post/${post._id}`)}
+          className="mt-5 cursor-pointer rounded-xl bg-zinc-50 p-4"
+        >
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
             <User size={12} />
             Founder Post
@@ -367,7 +431,7 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
           </p>
         </div>
 
-        {/* ================= MEDIA ================= */}
+        {/* MEDIA */}
 
         {post.media?.length > 0 && (
           <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200">
@@ -422,34 +486,19 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
             )}
           </div>
         )}
-
-        {/* ================= AUTHOR EMAIL ================= */}
-
-        {post.author?.email && (
-          <div className="mt-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-              Contact
-            </p>
-
-            <p className="mt-1 truncate text-xs font-medium text-zinc-700">
-              {post.author.email}
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* ================= SOCIAL FOOTER ================= */}
+      {/* SOCIAL FOOTER */}
 
       <div className="mt-auto border-t border-zinc-100 px-5 py-3">
         <div className="flex items-center justify-between">
-          {/* LEFT - LIKE + COMMENT */}
-
           <div className="flex items-center gap-1">
-            {/* Like */}
+            {/* LIKE */}
 
             <button
               type="button"
-              onClick={() => setLiked((prev) => !prev)}
+              onClick={handleLike}
+              disabled={!userId}
               className={`group/like flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs transition ${
                 liked
                   ? "text-red-500 hover:bg-red-50"
@@ -464,38 +513,97 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
                 {liked ? "♥" : "♡"}
               </span>
 
-              <span className="font-medium">
-                {likesCount}
-              </span>
+              <span className="font-medium">{likesCount}</span>
             </button>
 
-            {/* Comment */}
+            {/* COMMENT */}
 
             <button
               type="button"
+              onClick={handleOpenComments}
               className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
             >
-              <span className="text-base leading-none"><FaComment/></span>
-
-              <span className="font-medium">
-                {baseComments}
+              <span className="text-base leading-none">
+                <FaComment />
               </span>
+
+              <span className="font-medium">{commentsCount}</span>
             </button>
           </div>
-
-          {/* RIGHT - VIEW PROFILE */}
-
-          <button
-            type="button"
-            onClick={() => {
-              appRouter.push(`/user-profile/${post.author._id}`);
-            }}
-            className="flex items-center gap-1.5 rounded-lg bg-zinc-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-zinc-800"
-          >
-            View profile
-            <ArrowUpRight size={14} />
-          </button>
         </div>
+
+        {/* COMMENTS */}
+
+        {commentOpen && (
+          <div className="mt-3 border-t border-zinc-100 pt-3">
+            {/* ADD COMMENT */}
+
+            <div className="flex gap-2">
+              <input
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddComment();
+                  }
+                }}
+                placeholder="Write a comment..."
+                className="h-9 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs outline-none focus:border-zinc-400"
+              />
+
+              <button
+                onClick={handleAddComment}
+                disabled={commentLoading || !commentText.trim()}
+                className="rounded-lg bg-zinc-950 px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {commentLoading ? "..." : "Post"}
+              </button>
+            </div>
+
+            {/* COMMENT LIST */}
+
+            <div className="mt-3 max-h-52 space-y-3 overflow-y-auto">
+              {commentsLoading ? (
+                <p className="py-3 text-center text-xs text-zinc-400">
+                  Loading comments...
+                </p>
+              ) : comments.length === 0 ? (
+                <p className="py-3 text-center text-xs text-zinc-400">
+                  No comments yet.
+                </p>
+              ) : (
+                comments.map((comment) => (
+                  <div
+                    key={comment._id}
+                    className="rounded-lg bg-zinc-50 p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold text-zinc-900">
+                        {comment.user?.name ||
+                          comment.author?.name ||
+                          comment.user?.fullName ||
+                          "User"}
+                      </p>
+
+                      {comment.user?._id === userId && (
+                        <button
+                          type="button"
+                          className="text-[10px] text-red-500 hover:text-red-700"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+
+                    <p className="mt-1 text-xs leading-5 text-zinc-600">
+                      {comment.content}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </article>
   );
