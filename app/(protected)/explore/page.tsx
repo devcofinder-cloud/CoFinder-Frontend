@@ -11,10 +11,12 @@ import {
   User,
   Image as ImageIcon,
   Video,
+  Bookmark,
 } from "lucide-react";
 import { dashboardStore } from "@/app/store/dashboardStore";
 import { useRouter } from "next/navigation";
 import { FaComment } from "react-icons/fa";
+import CustomToast from "./comp/CustomToast";
 
 const categories = [
   "All",
@@ -48,6 +50,7 @@ type ExplorePost = {
   commentsCount: number;
   createdAt: string;
   updatedAt: string;
+  isSaved: boolean;
 };
 
 export default function ExplorePage() {
@@ -274,14 +277,15 @@ export default function ExplorePage() {
    POST CARD
 ========================================================= */
 
-
 function FounderPostCard({ post }: { post: ExplorePost }) {
   const authorName = post.author?.name || "Unknown Founder";
   const appRouter = useRouter();
 
-  const { toggleLike, addComment, getComments } = dashboardStore();
+  const { toggleLike, toggleSave, addComment, getComments } = dashboardStore();
 
   const [userId, setUserId] = useState("");
+  const [isSaved, setIsSaved] = useState(!!post.isSaved);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
@@ -312,6 +316,12 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
     .slice(0, 2)
     .toUpperCase();
 
+  const [toast, setToast] = useState({
+    isOpen: false,
+    message: "",
+    type: "success" as "success" | "error",
+  });
+
   const formattedDate = new Date(post.createdAt).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -325,6 +335,40 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
       await toggleLike(post._id, userId);
     } catch (error) {
       console.error("Like failed:", error);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!userId || saveLoading) return;
+
+    try {
+      setSaveLoading(true);
+
+      const res = await toggleSave(post._id);
+
+      if (res?.success) {
+        const saved = res.data?.saved ?? !isSaved;
+
+        setIsSaved(saved);
+
+        setToast({
+          isOpen: true,
+          message: saved
+            ? "Post saved successfully"
+            : "Post removed from saved posts",
+          type: "success",
+        });
+      }
+    } catch (error) {
+      console.error("Save failed:", error);
+
+      setToast({
+        isOpen: true,
+        message: "Unable to save this post",
+        type: "error",
+      });
+    } finally {
+      setSaveLoading(false);
     }
   };
 
@@ -369,246 +413,275 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
   };
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/50">
-      {post.author?.archetype && (
-        <div className="absolute right-5 top-5 z-10">
-          <div className="rounded-full border border-zinc-200 bg-white/90 px-2.5 py-1 text-[10px] font-bold text-zinc-700 backdrop-blur">
-            {post.author.archetype}
-          </div>
-        </div>
-      )}
-
-      <div className="p-5">
-        {/* PROFILE */}
-
-        <div
-          onClick={() =>
-            appRouter.push(`/user-profile/${post?.author?._id}`)
-          }
-          className="flex cursor-pointer items-center gap-3"
-        >
-          {post.author?.profileImage ? (
-            <img
-              src={post.author.profileImage}
-              alt={authorName}
-              className="h-14 w-14 rounded-full object-cover"
-            />
-          ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-950 text-sm font-bold text-white">
-              {initials}
+    <>
+      <CustomToast
+        isOpen={toast.isOpen}
+        message={toast.message}
+        type={toast.type}
+        onClose={() =>
+          setToast((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+      />
+      <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-200/50">
+        {post.author?.archetype && (
+          <div className="absolute right-5 top-5 z-10">
+            <div className="rounded-full border border-zinc-200 bg-white/90 px-2.5 py-1 text-[10px] font-bold text-zinc-700 backdrop-blur">
+              {post.author.archetype}
             </div>
-          )}
-
-          <div className="min-w-0 pr-24">
-            <h3 className="truncate text-sm font-bold">{authorName}</h3>
-
-            {post.author?.archetype && (
-              <p className="mt-0.5 truncate text-xs text-zinc-500">
-                {post.author.archetype}
-              </p>
-            )}
-
-            <div className="mt-1 flex items-center gap-1 text-[10px] text-zinc-400">
-              <Clock3 size={11} />
-              {formattedDate}
-            </div>
-          </div>
-        </div>
-
-        {/* POST CONTENT */}
-
-        <div
-          onClick={() => appRouter.push(`/post/${post._id}`)}
-          className="mt-5 cursor-pointer rounded-xl bg-zinc-50 p-4"
-        >
-          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-            <User size={12} />
-            Founder Post
-          </div>
-
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-800">
-            {post.content || "No content available."}
-          </p>
-        </div>
-
-        {/* MEDIA */}
-
-        {post.media?.length > 0 && (
-          <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200">
-            {post.media[0].type === "image" && (
-              <img
-                src={post.media[0].url}
-                alt="Post media"
-                className="h-56 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
-              />
-            )}
-
-            {post.media[0].type === "video" && (
-              <div className="relative">
-                <video
-                  src={post.media[0].url}
-                  controls
-                  className="h-56 w-full object-cover"
-                />
-
-                <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-[10px] text-white">
-                  <Video size={11} />
-                  Video
-                </div>
-              </div>
-            )}
-
-            {post.media[0].type === "file" && (
-              <div className="flex h-24 items-center gap-3 px-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
-                  <ImageIcon size={18} />
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold">Attached file</p>
-
-                  <a
-                    href={post.media[0].url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 block text-[10px] text-zinc-500 hover:text-zinc-950"
-                  >
-                    Open attachment
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {post.media.length > 1 && (
-              <div className="border-t border-zinc-200 px-3 py-2 text-[10px] font-medium text-zinc-400">
-                +{post.media.length - 1} more media
-              </div>
-            )}
           </div>
         )}
-      </div>
 
-      {/* SOCIAL FOOTER */}
+        <div className="p-5">
+          {/* PROFILE */}
 
-      <div className="mt-auto border-t border-zinc-100 px-5 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            {/* LIKE */}
+          <div
+            onClick={() => appRouter.push(`/user-profile/${post?.author?._id}`)}
+            className="flex cursor-pointer items-center gap-3"
+          >
+            {post.author?.profileImage ? (
+              <img
+                src={post.author.profileImage}
+                alt={authorName}
+                className="h-14 w-14 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-950 text-sm font-bold text-white">
+                {initials}
+              </div>
+            )}
 
-            <button
-              type="button"
-              onClick={handleLike}
-              disabled={!userId}
-              className={`group/like flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs transition ${
-                liked
-                  ? "text-red-500 hover:bg-red-50"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-red-500"
-              }`}
-            >
-              <span
-                className={`text-base leading-none transition-transform ${
-                  liked ? "scale-110" : "group-hover/like:scale-110"
-                }`}
-              >
-                {liked ? "♥" : "♡"}
-              </span>
+            <div className="min-w-0 pr-24">
+              <h3 className="truncate text-sm font-bold">{authorName}</h3>
 
-              <span className="font-medium">{likesCount}</span>
-            </button>
+              {post.author?.archetype && (
+                <p className="mt-0.5 truncate text-xs text-zinc-500">
+                  {post.author.archetype}
+                </p>
+              )}
 
-            {/* COMMENT */}
-
-            <button
-              type="button"
-              onClick={handleOpenComments}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
-            >
-              <span className="text-base leading-none">
-                <FaComment />
-              </span>
-
-              <span className="font-medium">{commentsCount}</span>
-            </button>
+              <div className="mt-1 flex items-center gap-1 text-[10px] text-zinc-400">
+                <Clock3 size={11} />
+                {formattedDate}
+              </div>
+            </div>
           </div>
+
+          {/* POST CONTENT */}
+
+          <div
+            onClick={() => appRouter.push(`/post/${post._id}`)}
+            className="mt-5 cursor-pointer rounded-xl bg-zinc-50 p-4"
+          >
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+              <User size={12} />
+              Founder Post
+            </div>
+
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-800">
+              {post.content || "No content available."}
+            </p>
+          </div>
+
+          {/* MEDIA */}
+
+          {post.media?.length > 0 && (
+            <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200">
+              {post.media[0].type === "image" && (
+                <img
+                  src={post.media[0].url}
+                  alt="Post media"
+                  className="h-56 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                />
+              )}
+
+              {post.media[0].type === "video" && (
+                <div className="relative">
+                  <video
+                    src={post.media[0].url}
+                    controls
+                    className="h-56 w-full object-cover"
+                  />
+
+                  <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-[10px] text-white">
+                    <Video size={11} />
+                    Video
+                  </div>
+                </div>
+              )}
+
+              {post.media[0].type === "file" && (
+                <div className="flex h-24 items-center gap-3 px-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
+                    <ImageIcon size={18} />
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold">Attached file</p>
+
+                    <a
+                      href={post.media[0].url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 block text-[10px] text-zinc-500 hover:text-zinc-950"
+                    >
+                      Open attachment
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {post.media.length > 1 && (
+                <div className="border-t border-zinc-200 px-3 py-2 text-[10px] font-medium text-zinc-400">
+                  +{post.media.length - 1} more media
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* COMMENTS */}
+        {/* SOCIAL FOOTER */}
 
-        {commentOpen && (
-          <div className="mt-3 border-t border-zinc-100 pt-3">
-            {/* ADD COMMENT */}
-
-            <div className="flex gap-2">
-              <input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleAddComment();
-                  }
-                }}
-                placeholder="Write a comment..."
-                className="h-9 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs outline-none focus:border-zinc-400"
-              />
+        <div className="mt-auto border-t border-zinc-100 px-5 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              {/* LIKE */}
 
               <button
-                onClick={handleAddComment}
-                disabled={commentLoading || !commentText.trim()}
-                className="rounded-lg bg-zinc-950 px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+                type="button"
+                onClick={handleLike}
+                disabled={!userId}
+                className={`group/like flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs transition ${
+                  liked
+                    ? "text-red-500 hover:bg-red-50"
+                    : "text-zinc-500 hover:bg-zinc-100 hover:text-red-500"
+                }`}
               >
-                {commentLoading ? "..." : "Post"}
+                <span
+                  className={`text-base leading-none transition-transform ${
+                    liked ? "scale-110" : "group-hover/like:scale-110"
+                  }`}
+                >
+                  {liked ? "♥" : "♡"}
+                </span>
+
+                <span className="font-medium">{likesCount}</span>
+              </button>
+
+              {/* COMMENT */}
+
+              <button
+                type="button"
+                onClick={handleOpenComments}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
+              >
+                <span className="text-base leading-none">
+                  <FaComment />
+                </span>
+
+                <span className="font-medium">{commentsCount}</span>
               </button>
             </div>
 
-            {/* COMMENT LIST */}
+            {/* SAVE */}
 
-            <div className="mt-3 max-h-52 space-y-3 overflow-y-auto">
-              {commentsLoading ? (
-                <p className="py-3 text-center text-xs text-zinc-400">
-                  Loading comments...
-                </p>
-              ) : comments.length === 0 ? (
-                <p className="py-3 text-center text-xs text-zinc-400">
-                  No comments yet.
-                </p>
-              ) : (
-                comments.map((comment) => (
-                  <div
-                    key={comment._id}
-                    className="rounded-lg bg-zinc-50 p-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold text-zinc-900">
-                        {comment.user?.name ||
-                          comment.author?.name ||
-                          comment.user?.fullName ||
-                          "User"}
-                      </p>
-
-                      {comment.user?._id === userId && (
-                        <button
-                          type="button"
-                          className="text-[10px] text-red-500 hover:text-red-700"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-
-                    <p className="mt-1 text-xs leading-5 text-zinc-600">
-                      {comment.content}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!userId || saveLoading}
+              className={`flex h-9 w-9 items-center justify-center rounded-lg transition ${
+                isSaved
+                  ? "bg-white text-gray-700"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"
+              }`}
+              title={isSaved ? "Remove from saved" : "Save post"}
+            >
+              <Bookmark
+                size={18}
+                strokeWidth={1.8}
+                fill={isSaved ? "currentColor" : "none"}
+              />
+            </button>
           </div>
-        )}
-      </div>
-    </article>
+          {/* COMMENTS */}
+
+          {commentOpen && (
+            <div className="mt-3 border-t border-zinc-100 pt-3">
+              {/* ADD COMMENT */}
+
+              <div className="flex gap-2">
+                <input
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddComment();
+                    }
+                  }}
+                  placeholder="Write a comment..."
+                  className="h-9 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs outline-none focus:border-zinc-400"
+                />
+
+                <button
+                  onClick={handleAddComment}
+                  disabled={commentLoading || !commentText.trim()}
+                  className="rounded-lg bg-zinc-950 px-3 text-xs font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {commentLoading ? "..." : "Post"}
+                </button>
+              </div>
+
+              {/* COMMENT LIST */}
+
+              <div className="mt-3 max-h-52 space-y-3 overflow-y-auto">
+                {commentsLoading ? (
+                  <p className="py-3 text-center text-xs text-zinc-400">
+                    Loading comments...
+                  </p>
+                ) : comments.length === 0 ? (
+                  <p className="py-3 text-center text-xs text-zinc-400">
+                    No comments yet.
+                  </p>
+                ) : (
+                  comments.map((comment) => (
+                    <div
+                      key={comment._id}
+                      className="rounded-lg bg-zinc-50 p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-zinc-900">
+                          {comment.user?.name ||
+                            comment.author?.name ||
+                            comment.user?.fullName ||
+                            "User"}
+                        </p>
+
+                        {comment.user?._id === userId && (
+                          <button
+                            type="button"
+                            className="text-[10px] text-red-500 hover:text-red-700"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+
+                      <p className="mt-1 text-xs leading-5 text-zinc-600">
+                        {comment.content}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </article>
+    </>
   );
 }
-
 
 /* =========================================================
    FILTER

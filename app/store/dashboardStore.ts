@@ -189,7 +189,11 @@ interface DashboardState {
   loadingSameArchetypeUsers: boolean;
   loadingNearbyUsers: boolean;
 
+
+
   toggleLike: (postId: string, userId: string) => Promise<any>;
+  toggleSave: (postId: string) => Promise<any>;
+  fetchSavedPosts: () => Promise<any>;
 
   addComment: (postId: string, content: string) => Promise<any>;
 

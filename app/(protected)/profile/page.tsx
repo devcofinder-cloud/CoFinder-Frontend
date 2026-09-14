@@ -25,6 +25,7 @@ import {
   MoreVertical,
   Pencil,
   X,
+  File,
 } from "lucide-react";
 import {
   FaDiscord,
@@ -328,6 +329,14 @@ export default function ProfilePage() {
                       >
                         <Pencil className="h-4 w-4" />
                         Edit Profile
+                      </button>
+
+                      <button
+                        onClick={()=>appRouter.push('/saved-posts')}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-black transition hover:bg-neutral-100"
+                      >
+                        <File className="h-4 w-4" />
+                        Saved Posts
                       </button>
 
                       <button
