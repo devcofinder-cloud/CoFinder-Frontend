@@ -12,6 +12,8 @@ import {
   Image as ImageIcon,
   Video,
   Bookmark,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { dashboardStore } from "@/app/store/dashboardStore";
 import { useRouter } from "next/navigation";
@@ -47,6 +49,15 @@ type ExplorePost = {
   content: string;
   media: PostMedia[];
   likes: string[];
+
+  upvotes: string[];
+  downvotes: string[];
+
+  upvotesCount?: number;
+  downvotesCount?: number;
+  hasUpvoted?: boolean;
+  hasDownvoted?: boolean;
+
   commentsCount: number;
   createdAt: string;
   updatedAt: string;
@@ -281,7 +292,15 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
   const authorName = post.author?.name || "Unknown Founder";
   const appRouter = useRouter();
 
-  const { toggleLike, toggleSave, addComment, getComments } = dashboardStore();
+  const {
+  toggleLike,
+  toggleSave,
+  addComment,
+  getComments,
+  getPostVotes,
+  toggleUpvote,
+  toggleDownvote,
+} = dashboardStore();
 
   const [userId, setUserId] = useState("");
   const [isSaved, setIsSaved] = useState(!!post.isSaved);
@@ -291,6 +310,14 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
   const [comments, setComments] = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentLoading, setCommentLoading] = useState(false);
+  const [voteLoading, setVoteLoading] = useState(false);
+
+const [votes, setVotes] = useState({
+  upvotesCount: post.upvotesCount || post.upvotes?.length || 0,
+  downvotesCount: post.downvotesCount || post.downvotes?.length || 0,
+  hasUpvoted: post.hasUpvoted || false,
+  hasDownvoted: post.hasDownvoted || false,
+});
 
   useEffect(() => {
     const user = localStorage.getItem("user");
@@ -304,6 +331,77 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
       }
     }
   }, []);
+  useEffect(() => {
+  if (!post?._id) return;
+
+  const loadVotes = async () => {
+    try {
+      const data = await getPostVotes(post._id);
+
+      if (data) {
+        setVotes({
+          upvotesCount: data.upvotesCount || 0,
+          downvotesCount: data.downvotesCount || 0,
+          hasUpvoted: !!data.hasUpvoted,
+          hasDownvoted: !!data.hasDownvoted,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load votes:", error);
+    }
+  };
+
+  loadVotes();
+}, [post?._id]);
+const handleUpvote = async () => {
+  if (!userId || voteLoading) return;
+
+  try {
+    setVoteLoading(true);
+
+    const res = await toggleUpvote(post._id);
+
+    if (res?.success) {
+      const data = res.data;
+
+      setVotes({
+        upvotesCount: data.upvotesCount || 0,
+        downvotesCount: data.downvotesCount || 0,
+        hasUpvoted: !!data.upvoted,
+        hasDownvoted: !!data.downvoted,
+      });
+    }
+  } catch (error) {
+    console.error("Upvote failed:", error);
+  } finally {
+    setVoteLoading(false);
+  }
+};
+
+const handleDownvote = async () => {
+  if (!userId || voteLoading) return;
+
+  try {
+    setVoteLoading(true);
+
+    const res = await toggleDownvote(post._id);
+
+    if (res?.success) {
+      const data = res.data;
+
+      setVotes({
+        upvotesCount: data.upvotesCount || 0,
+        downvotesCount: data.downvotesCount || 0,
+        hasUpvoted: !!data.upvoted,
+        hasDownvoted: !!data.downvoted,
+      });
+    }
+  } catch (error) {
+    console.error("Downvote failed:", error);
+  } finally {
+    setVoteLoading(false);
+  }
+};
 
   const liked = userId ? post.likes?.includes(userId) : false;
   const likesCount = post.likes?.length || 0;
@@ -569,6 +667,62 @@ function FounderPostCard({ post }: { post: ExplorePost }) {
 
                 <span className="font-medium">{likesCount}</span>
               </button>
+
+              {/* UPVOTE */}
+
+<button
+  type="button"
+  onClick={handleUpvote}
+  disabled={!userId || voteLoading}
+  className={`group/upvote flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs transition ${
+    votes.hasUpvoted
+      ? "bg-zinc-950 text-white"
+      : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"
+  }`}
+>
+  <ThumbsUp
+    size={15}
+    strokeWidth={2}
+    className={`transition-transform ${
+      votes.hasUpvoted
+        ? "scale-110"
+        : "group-hover/upvote:scale-110"
+    }`}
+    fill={votes.hasUpvoted ? "currentColor" : "none"}
+  />
+
+  <span className="font-medium">
+    {votes.upvotesCount}
+  </span>
+</button>
+
+{/* DOWNVOTE */}
+
+<button
+  type="button"
+  onClick={handleDownvote}
+  disabled={!userId || voteLoading}
+  className={`group/downvote flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs transition ${
+    votes.hasDownvoted
+      ? "bg-zinc-950 text-white"
+      : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"
+  }`}
+>
+  <ThumbsDown
+    size={15}
+    strokeWidth={2}
+    className={`transition-transform ${
+      votes.hasDownvoted
+        ? "scale-110"
+        : "group-hover/downvote:scale-110"
+    }`}
+    fill={votes.hasDownvoted ? "currentColor" : "none"}
+  />
+
+  <span className="font-medium">
+    {votes.downvotesCount}
+  </span>
+</button>
 
               {/* COMMENT */}
 

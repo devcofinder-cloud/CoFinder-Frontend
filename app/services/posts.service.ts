@@ -39,3 +39,18 @@ export const getSavedPosts = async () => {
 
   return response.data;
 };
+
+export const getPostVotes = async (postId:string) => {
+    const response = await api.get(`/posts/${postId}/votes`);
+    return response.data;
+};
+
+export const togglePostUpvote = async (postId:string) => {
+    const response = await api.post(`/posts/${postId}/upvote`);
+    return response.data;
+};
+
+export const togglePostDownvote = async (postId: string) => {
+    const response = await api.post(`/posts/${postId}/downvote`);
+    return response.data;
+};

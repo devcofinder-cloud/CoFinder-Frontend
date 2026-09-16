@@ -14,6 +14,8 @@ import {
   Trash2,
   Loader2,
   FileText,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 
 import { dashboardStore } from "@/app/store/dashboardStore";
@@ -55,6 +57,9 @@ export default function PostDetailsPage() {
     addComment,
     getComments,
     deleteComment,
+    getPostVotes,
+    toggleUpvote,
+    toggleDownvote,
   } = dashboardStore();
 
   const [userId, setUserId] = useState("");
@@ -65,6 +70,14 @@ export default function PostDetailsPage() {
   const [commentLoading, setCommentLoading] = useState(false);
 
   const [commentText, setCommentText] = useState("");
+  const [voteLoading, setVoteLoading] = useState(false);
+
+  const [votes, setVotes] = useState({
+    upvotesCount: 0,
+    downvotesCount: 0,
+    hasUpvoted: false,
+    hasDownvoted: false,
+  });
 
   const [mediaOpen, setMediaOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<any>(null);
@@ -103,6 +116,31 @@ export default function PostDetailsPage() {
   const likesCount = post?.likes?.length || 0;
   const commentsCount = post?.commentsCount || 0;
 
+  useEffect(() => {
+    if (!postId || !post) return;
+
+    const loadVotes = async () => {
+      try {
+        const res = await getPostVotes(postId);
+
+        const data = res?.data;
+
+        if (data) {
+          setVotes({
+            upvotesCount: data.upvotesCount || 0,
+            downvotesCount: data.downvotesCount || 0,
+            hasUpvoted: !!data.hasUpvoted,
+            hasDownvoted: !!data.hasDownvoted,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load votes:", error);
+      }
+    };
+
+    loadVotes();
+  }, [postId, post]);
+
   const handleLike = async () => {
     if (!post || !userId) return;
 
@@ -110,6 +148,56 @@ export default function PostDetailsPage() {
       await toggleLike(post._id, userId);
     } catch (error) {
       console.error("Like failed:", error);
+    }
+  };
+
+  const handleUpvote = async () => {
+    if (!post || !userId || voteLoading) return;
+
+    try {
+      setVoteLoading(true);
+
+      const res = await toggleUpvote(post._id);
+
+      if (res?.success) {
+        const data = res.data;
+
+        setVotes({
+          upvotesCount: data?.upvotesCount || 0,
+          downvotesCount: data?.downvotesCount || 0,
+          hasUpvoted: !!data?.upvoted,
+          hasDownvoted: !!data?.downvoted,
+        });
+      }
+    } catch (error) {
+      console.error("Upvote failed:", error);
+    } finally {
+      setVoteLoading(false);
+    }
+  };
+
+  const handleDownvote = async () => {
+    if (!post || !userId || voteLoading) return;
+
+    try {
+      setVoteLoading(true);
+
+      const res = await toggleDownvote(post._id);
+
+      if (res?.success) {
+        const data = res.data;
+
+        setVotes({
+          upvotesCount: data?.upvotesCount || 0,
+          downvotesCount: data?.downvotesCount || 0,
+          hasUpvoted: !!data?.upvoted,
+          hasDownvoted: !!data?.downvoted,
+        });
+      }
+    } catch (error) {
+      console.error("Downvote failed:", error);
+    } finally {
+      setVoteLoading(false);
     }
   };
 
@@ -197,8 +285,6 @@ export default function PostDetailsPage() {
       console.error("Share failed:", error);
     }
   };
-
- 
 
   const getCommentUser = (comment: Comment) => {
     return comment.user || comment.author;
@@ -478,6 +564,50 @@ export default function PostDetailsPage() {
                 <Heart size={19} fill={isLiked ? "currentColor" : "none"} />
 
                 <span className="text-xs font-medium">{likesCount}</span>
+              </motion.button>
+
+              {/* Upvote */}
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.84 }}
+                onClick={handleUpvote}
+                disabled={!userId || voteLoading}
+                className={`flex h-10 items-center gap-2 rounded-full px-3 transition ${
+                  votes.hasUpvoted
+                    ? "bg-zinc-950 text-white"
+                    : "text-zinc-700 hover:bg-zinc-100"
+                }`}
+              >
+                <ThumbsUp
+                  size={18}
+                  fill={votes.hasUpvoted ? "currentColor" : "none"}
+                />
+
+                <span className="text-xs font-medium">
+                  {votes.upvotesCount}
+                </span>
+              </motion.button>
+
+              {/* Downvote */}
+              <motion.button
+                type="button"
+                whileTap={{ scale: 0.84 }}
+                onClick={handleDownvote}
+                disabled={!userId || voteLoading}
+                className={`flex h-10 items-center gap-2 rounded-full px-3 transition ${
+                  votes.hasDownvoted
+                    ? "bg-zinc-950 text-white"
+                    : "text-zinc-700 hover:bg-zinc-100"
+                }`}
+              >
+                <ThumbsDown
+                  size={18}
+                  fill={votes.hasDownvoted ? "currentColor" : "none"}
+                />
+
+                <span className="text-xs font-medium">
+                  {votes.downvotesCount}
+                </span>
               </motion.button>
 
               {/* Comments */}

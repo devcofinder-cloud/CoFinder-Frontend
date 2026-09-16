@@ -12,10 +12,11 @@ import {
   addPostComment,
   getPostComments,
   deletePostComment,
+
  
 } from "../services/dashboard.service";
 import { getProfessionalProfile } from "../services/auth.service";
-import {toggleSavePost, getSavedPosts} from '../services/posts.service'
+import {toggleSavePost, getSavedPosts, togglePostUpvote, getPostVotes,togglePostDownvote} from '../services/posts.service'
 
 export interface SearchUser extends User {}
 
@@ -50,18 +51,31 @@ export interface PostAuthor {
   archetype?: string;
 }
 
+
+
 export interface Post {
   _id: string;
   author: PostAuthor;
   content?: string;
   media: PostMedia[];
   likes: string[];
+
+  upvotes: string[];
+  downvotes: string[];
+
+  upvotesCount?: number;
+  downvotesCount?: number;
+
+  hasUpvoted?: boolean;
+  hasDownvoted?: boolean;
+
   commentsCount: number;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
   isSaved?: boolean;
 }
+
 
 export interface User {
   _id: string;
@@ -213,6 +227,9 @@ interface DashboardState {
   fetchRecommendedUsers: (limit?: number) => Promise<void>;
 
   fetchSameArchetypeUsers: (limit?: number) => Promise<void>;
+    getPostVotes: (postId: string) => Promise<any>;
+  toggleUpvote: (postId: string) => Promise<any>;
+  toggleDownvote: (postId: string) => Promise<any>;
 
   fetchNearbyUsers: (limit?: number) => Promise<void>;
   savedPosts: Post[];
@@ -652,5 +669,108 @@ export const dashboardStore = create<DashboardState>((set) => ({
       loadingSavedPosts: false,
     });
   }
-},
+},  getPostVotes: async (postId: string) => {
+    try {
+      const res = await getPostVotes(postId);
+
+      return res.data?.data || res.data || null;
+    } catch (error) {
+      console.error("Get post votes error:", error);
+      throw error;
+    }
+  },
+
+  toggleUpvote: async (postId: string) => {
+    try {
+      const res = await togglePostUpvote(postId);
+
+      if (res.success) {
+        const {
+          upvoted,
+          downvoted,
+          upvotesCount,
+          downvotesCount,
+        } = res.data;
+
+        set((state) => {
+          const updatePost = (post: Post): Post => {
+            if (post._id !== postId) {
+              return post;
+            }
+
+            return {
+              ...post,
+              upvotes: upvoted
+                ? [...(post.upvotes || [])]
+                : [...(post.upvotes || [])],
+              downvotes: downvoted
+                ? [...(post.downvotes || [])]
+                : [...(post.downvotes || [])],
+              upvotesCount,
+              downvotesCount,
+            };
+          };
+
+          return {
+            posts: state.posts.map(updatePost),
+            userPosts: state.userPosts.map(updatePost),
+            post:
+              state.post?._id === postId
+                ? updatePost(state.post)
+                : state.post,
+          };
+        });
+      }
+
+      return res;
+    } catch (error) {
+      console.error("Toggle upvote error:", error);
+      throw error;
+    }
+  },
+
+  toggleDownvote: async (postId: string) => {
+    try {
+      const res = await togglePostDownvote(postId);
+
+      if (res.success) {
+        const {
+          upvoted,
+          downvoted,
+          upvotesCount,
+          downvotesCount,
+        } = res.data;
+
+        set((state) => {
+          const updatePost = (post: Post): Post => {
+            if (post._id !== postId) {
+              return post;
+            }
+
+            return {
+              ...post,
+              upvotes: [...(post.upvotes || [])],
+              downvotes: [...(post.downvotes || [])],
+              upvotesCount,
+              downvotesCount,
+            };
+          };
+
+          return {
+            posts: state.posts.map(updatePost),
+            userPosts: state.userPosts.map(updatePost),
+            post:
+              state.post?._id === postId
+                ? updatePost(state.post)
+                : state.post,
+          };
+        });
+      }
+
+      return res;
+    } catch (error) {
+      console.error("Toggle downvote error:", error);
+      throw error;
+    }
+  },
 }));
