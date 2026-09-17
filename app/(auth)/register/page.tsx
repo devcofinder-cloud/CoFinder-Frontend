@@ -289,7 +289,7 @@ export default function PremiumRegister() {
                   /* STEP 1 FORM */
                   <form onSubmit={nextStep} className="space-y-4">
                     {/* Google Register */}
-                    <button
+                    {/* <button
                       type="button"
                       onClick={handleGoogleRegister}
                       className="w-full h-11 flex items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-50 hover:border-zinc-300 text-zinc-700 hover:text-zinc-900 text-sm font-medium transition-all duration-200 active:scale-[0.99] shadow-sm"
@@ -314,7 +314,7 @@ export default function PremiumRegister() {
                       </svg>
 
                       <span>Continue with Google</span>
-                    </button>
+                    </button> */}
 
                     {/* Divider */}
                     <div className="flex items-center gap-4 py-2">
