@@ -16,7 +16,8 @@ import {
  
 } from "../services/dashboard.service";
 import { getProfessionalProfile } from "../services/auth.service";
-import {toggleSavePost, getSavedPosts, togglePostUpvote, getPostVotes,togglePostDownvote} from '../services/posts.service'
+import {toggleSavePost, getSavedPosts, togglePostUpvote, getPostVotes,togglePostDownvote,  fetchRecentlyPosted,
+} from '../services/posts.service'
 
 export interface SearchUser extends User {}
 
@@ -234,6 +235,11 @@ interface DashboardState {
   fetchNearbyUsers: (limit?: number) => Promise<void>;
   savedPosts: Post[];
   loadingSavedPosts: boolean;
+
+  recentlyPosted: Post[];
+loadingRecentlyPosted: boolean;
+
+fetchRecentlyPosted: (page?: number, limit?: number) => Promise<void>;
 }
 
 export const dashboardStore = create<DashboardState>((set) => ({
@@ -241,7 +247,9 @@ export const dashboardStore = create<DashboardState>((set) => ({
   loadingPosts: false,
   post: null,
   loadingPost: false,
-
+  
+recentlyPosted: [],
+loadingRecentlyPosted: false,
   savedPosts: [],
   loadingSavedPosts: false,
 
@@ -773,4 +781,32 @@ export const dashboardStore = create<DashboardState>((set) => ({
       throw error;
     }
   },
+
+  fetchRecentlyPosted: async (page = 1, limit = 10) => {
+  try {
+    set({ loadingRecentlyPosted: true });
+
+    const response = await fetchRecentlyPosted(page, limit);
+
+    const posts =
+      response.data?.posts ||
+      response.data?.data ||
+      response.data ||
+      [];
+
+    set({
+      recentlyPosted: Array.isArray(posts) ? posts : [],
+    });
+  } catch (error) {
+    console.error("Failed to fetch recently posted:", error);
+
+    set({
+      recentlyPosted: [],
+    });
+  } finally {
+    set({
+      loadingRecentlyPosted: false,
+    });
+  }
+},
 }));

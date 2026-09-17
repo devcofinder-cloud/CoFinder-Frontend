@@ -18,6 +18,7 @@ import RecommendedFounders from "@/app/(protected)/dashboard/Dashboard-Component
 import SameArchetype from "@/app/(protected)/dashboard/Dashboard-Components/SameArchetype";
 import NearbyFounders from "@/app/(protected)/dashboard/Dashboard-Components/NearbyFounders";
 import DashboardSearch from "./Dashboard-Components/DashboardSearch";
+import RecentlyPosted from "./Dashboard-Components/RecentPosts";
 
 export default function DashboardPage() {
   const appRouter = useRouter();
@@ -378,6 +379,9 @@ export default function DashboardPage() {
                 </button>
               </div>
             </section>
+
+
+            <RecentlyPosted/>
 
             <div className="min-w-0">
               <RecommendedFounders />

@@ -54,3 +54,11 @@ export const togglePostDownvote = async (postId: string) => {
     const response = await api.post(`/posts/${postId}/downvote`);
     return response.data;
 };
+
+
+export const fetchRecentlyPosted = async (page = 1, limit = 10) => {
+  const response = await api.get(
+    `/posts/recently-posted?page=${page}&limit=${limit}`
+  );
+  return response.data;
+};
