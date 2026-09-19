@@ -28,7 +28,7 @@ import {
 import HowItWorks from "./Home-Components/HowItWorks";
 import BuiltFor from "./Home-Components/BuiltFor";
 import BuiltBy from "./Home-Components/BuiltBy";
-import PricePlan from "./Home-Components/PricePlans";
+// import PricePlan from "./Home-Components/PricePlans";
 
 // Animation Variants
 const fadeInUp: Variants = {
@@ -179,7 +179,7 @@ export default function CofinderLanding() {
             </div>
 
             {/* Toggle CTA Buttons */}
-            <motion.div
+            {/* <motion.div
               variants={fadeInUp}
               className="flex items-center gap-3 pt-2"
             >
@@ -205,7 +205,7 @@ export default function CofinderLanding() {
                 <Code2 className="w-4 h-4" />
                 I'm a Builder
               </button>
-            </motion.div>
+            </motion.div> */}
 
             {/* Social Proof */}
             <motion.div
@@ -419,7 +419,7 @@ export default function CofinderLanding() {
                   </p>
                 </div>
 
-                <button className="w-full bg-slate-900 hover:bg-indigo-600 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors shadow-md">
+                <button className="w-full bg-slate-900 hover:scale-105 duration-400 transition-all text-white text-xs font-semibold py-2.5 rounded-xl shadow-md">
                   Send Connection Request
                 </button>
               </motion.div>
@@ -533,7 +533,7 @@ export default function CofinderLanding() {
       <HowItWorks />
       <BuiltFor />
       <BuiltBy />
-      <PricePlan />
+      {/* <PricePlan /> */}
     </div>
   );
 }
