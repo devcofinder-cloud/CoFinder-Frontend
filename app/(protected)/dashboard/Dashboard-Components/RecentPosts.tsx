@@ -186,44 +186,43 @@ export default function RecentlyPosted() {
                   )}
 
                   {/* Media */}
-                  {post.media?.length > 0 && (
-                    <div className="mt-4 max-w-xl overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
-                      {post.media.length === 1 &&
-                      post.media[0].type === "image" ? (
-                        <div className="relative aspect-[16/9] w-full">
-                          <Image
-                            src={post.media[0].url}
-                            alt={post.media[0].name || "Post image"}
-                            fill
-                            className="object-cover transition duration-500 group-hover:scale-[1.02]"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap gap-2 p-2">
-                          {post.media
-                            .slice(0, 3)
-                            .map((media, mediaIndex) => (
-                              <div
-                                key={`${media.publicId}-${mediaIndex}`}
-                                className="flex min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600"
-                              >
-                                {getMediaIcon(media.type)}
+                {post.media?.length > 0 && (
+  <div className="mt-4 max-w-xl overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+    {post.media.length === 1 &&
+    post.media[0]?.type === "image" &&
+    !post.media[0]?.url?.toLowerCase().includes(".pdf") ? (
+      <div className="relative aspect-[16/9] w-full">
+        <Image
+          src={post.media[0].url}
+          alt={post.media[0]?.name || "Post image"}
+          fill
+          className="object-cover transition duration-500 group-hover:scale-[1.02]"
+        />
+      </div>
+    ) : (
+      <div className="flex flex-wrap gap-2 p-2">
+        {post.media.slice(0, 3).map((media, mediaIndex) => (
+          <div
+            key={`${media.publicId}-${mediaIndex}`}
+            className="flex min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600"
+          >
+            {getMediaIcon(media.type)}
 
-                                <span className="max-w-[140px] truncate">
-                                  {media.name || `${media.type} file`}
-                                </span>
-                              </div>
-                            ))}
+            <span className="max-w-[140px] truncate">
+              {media.name || `${media.type} file`}
+            </span>
+          </div>
+        ))}
 
-                          {post.media.length > 3 && (
-                            <div className="flex items-center rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white">
-                              +{post.media.length - 3} more
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+        {post.media.length > 3 && (
+          <div className="flex items-center rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white">
+            +{post.media.length - 3} more
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+)}
 
                   {/* Stats */}
                   <div className="mt-4 flex max-w-xl items-center justify-between border-t border-zinc-100 pt-3">

@@ -1,4 +1,3 @@
-
 import api from "@/app/lib/axios";
 
 export interface LoginPayload {
@@ -132,7 +131,6 @@ export interface UpdateProfessionalProfilePayload {
   };
 }
 
-
 export const googleLogin = async (firebaseToken: string) => {
   const response = await api.post("/user/google-login", {
     firebaseToken,
@@ -141,8 +139,6 @@ export const googleLogin = async (firebaseToken: string) => {
   return response.data;
 };
 
-
-
 export const googleRegister = async (firebaseToken: string) => {
   const response = await api.post("/user/google-register", {
     firebaseToken,
@@ -150,8 +146,6 @@ export const googleRegister = async (firebaseToken: string) => {
 
   return response.data;
 };
-
-
 
 export const login = async (data: LoginPayload) => {
   const response = await api.post("/user/login", data);
@@ -207,10 +201,7 @@ export const editProfile = async (data: UpdatePayload) => {
     formData.append("profileImageType", data.profileImageType);
   }
 
-  const response = await api.put(
-    "/user/edit-profile",
-    formData
-  );
+  const response = await api.put("/user/edit-profile", formData);
 
   return response.data;
 };
@@ -231,4 +222,9 @@ export const updateProfessionalProfile = (
     userId,
     ...data,
   });
+};
+
+export const joinWaitlist = async (email: string) => {
+  const response = await api.post("/waitlist/join", { email });
+  return response.data;
 };
