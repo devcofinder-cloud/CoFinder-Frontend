@@ -40,6 +40,9 @@ import img3 from "../../../public/images/img3.png";
 import img4 from "../../../public/images/img4.png";
 import DotGrid from "./Home-Components/DotGrid";
 import { joinWaitlist } from "@/app/services/auth.service";
+import WhyCoFinder from "./Home-Components/WhyCofinder";
+import SkipAwkwardDM from "./Home-Components/SkipAwkwardDm";
+import ProfileMatches from "./Home-Components/ProfileMatches";
 
 const fadeInUp: Variants = {
   hidden: {
@@ -267,7 +270,7 @@ export default function CofinderLanding() {
               delay: 0.2,
               ease: "easeOut",
             }}
-            className="flex items-center justify-center lg:justify-end"
+            className="flex items-center justify-center md:justify-end"
           >
             <motion.div
               animate={{ y: [0, -8, 0] }}
@@ -276,7 +279,7 @@ export default function CofinderLanding() {
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-              className="w-full max-w-[620px]"
+              className="w-full max-w-[700px]"
             >
               <Image
                 src={hero}
@@ -302,77 +305,9 @@ export default function CofinderLanding() {
       </div>
 
       <DotGrid />
-
-      {/* FEATURES SECTION */}
-      <section className="w-full bg-white px-4 sm:px-6 py-16 sm:py-20 lg:py-28">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-14">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6 }}
-              className="w-full flex justify-center"
-            >
-              <Image
-                src={why}
-                alt="Why Cofinder"
-                width={800}
-                height={800}
-                className="w-full h-auto object-contain"
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="w-full flex justify-center"
-            >
-              <Image
-                src={img2}
-                alt="Cofinder feature"
-                width={800}
-                height={800}
-                className="w-full h-auto object-contain"
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-              className="w-full flex justify-center"
-            >
-              <Image
-                src={img3}
-                alt="Cofinder feature"
-                width={800}
-                height={800}
-                className="w-full h-auto object-contain"
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="w-full flex justify-center"
-            >
-              <Image
-                src={img4}
-                alt="Cofinder feature"
-                width={800}
-                height={800}
-                className="w-full h-auto object-contain"
-              />
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      <WhyCoFinder/>
+      <SkipAwkwardDM/>
+      <ProfileMatches/>
 
       <HowItWorks />
       <BuiltFor />
