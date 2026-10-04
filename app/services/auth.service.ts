@@ -225,6 +225,6 @@ export const updateProfessionalProfile = (
 };
 
 export const joinWaitlist = async (email: string) => {
-  const response = await api.post("/waitlist/join", { email });
+  const response = await api.post("/admin/waitlist/join", { email });
   return response.data;
 };
