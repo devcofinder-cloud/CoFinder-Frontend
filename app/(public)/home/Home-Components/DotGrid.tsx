@@ -3,13 +3,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  ArrowRight,
-  Check,
-  Loader2,
-  Mail,
-  X,
-} from "lucide-react";
+import { ArrowRight, Check, Loader2, Mail, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { joinWaitlist } from "@/app/services/auth.service";
 
@@ -58,6 +52,7 @@ export default function DotGridSlider() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const cardStageRef = useRef<HTMLDivElement | null>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const dotsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -86,9 +81,7 @@ export default function DotGridSlider() {
      WAITLIST SUBMIT
   ========================= */
 
-  const handleJoinWaitlist = async (
-    e: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const handleJoinWaitlist = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const trimmedEmail = email.trim();
@@ -144,6 +137,10 @@ export default function DotGridSlider() {
       (card): card is HTMLDivElement => card !== null,
     );
 
+    const dotElements = dotsRef.current.filter(
+      (dots): dots is HTMLDivElement => dots !== null,
+    );
+
     if (!section || !cardStage || !cardElements.length) return;
 
     const ctx = gsap.context(() => {
@@ -183,6 +180,10 @@ export default function DotGridSlider() {
             force3D: true,
           });
 
+          gsap.set(dotElements, {
+            opacity: 0,
+          });
+
           gsap.set(cardElements[0], {
             x: 0,
             y: 0,
@@ -190,6 +191,10 @@ export default function DotGridSlider() {
             rotateY: 0,
             rotateZ: 0,
             scale: 1,
+            opacity: 1,
+          });
+
+          gsap.set(dotElements[0], {
             opacity: 1,
           });
 
@@ -213,7 +218,18 @@ export default function DotGridSlider() {
             const previous = cardElements[i - 1];
             const current = cardElements[i];
 
+            const previousDots = dotElements[i - 1];
+            const currentDots = dotElements[i];
+
             timeline.to({}, { duration: 0.35 });
+
+            /*
+             * Previous card ke dots transition start hote hi
+             * completely hide ho jayenge.
+             */
+            timeline.set(previousDots, {
+              opacity: 0,
+            });
 
             timeline.to(previous, {
               x: 0,
@@ -227,6 +243,9 @@ export default function DotGridSlider() {
               ease: "power2.in",
             });
 
+            /*
+             * New card enter karega WITHOUT dots.
+             */
             timeline.fromTo(
               current,
               {
@@ -251,6 +270,20 @@ export default function DotGridSlider() {
               },
               "<0.12",
             );
+
+            /*
+             * Card center mein settle hone ke baad hi
+             * uske dots appear honge.
+             */
+            timeline.to(
+              currentDots,
+              {
+                opacity: 1,
+                duration: 0.18,
+                ease: "power2.out",
+              },
+              ">-0.02",
+            );
           }
 
           timeline.to({}, { duration: 0.5 });
@@ -268,10 +301,7 @@ export default function DotGridSlider() {
   }, []);
 
   return (
-    <section
-      ref={sectionRef}
-      className="w-full overflow-hidden bg-white"
-    >
+    <section ref={sectionRef} className="w-full overflow-hidden bg-white">
       {/* HEADING */}
       <div className="mx-auto w-full max-w-7xl px-5 pb-8 pt-24 sm:px-8 sm:pb-10 sm:pt-28">
         <div className="mx-auto max-w-2xl text-center">
@@ -280,8 +310,8 @@ export default function DotGridSlider() {
           </h2>
 
           <p className="mt-4 text-sm leading-relaxed text-gray-500 sm:text-base">
-            Find people who share your ambition, complement your skills and
-            want to build something extraordinary together.
+            Find people who share your ambition, complement your skills and want
+            to build something extraordinary together.
           </p>
         </div>
       </div>
@@ -306,9 +336,14 @@ export default function DotGridSlider() {
                 willChange: "transform, opacity",
               }}
             >
-              <div className="flex h-full w-full flex-col rounded-[28px] bg-gray-50 px-5 py-6 sm:rounded-[32px] sm:px-8 sm:py-8">
+              <div className="flex h-full w-full flex-col rounded-[28px] bg-gray-50 px-5 py-5 sm:rounded-[32px] sm:px-8 sm:py-8">
                 {/* 100 DOT MATRIX */}
-                <div className="flex min-h-0 flex-1 items-end">
+                <div
+                  ref={(el) => {
+                    dotsRef.current[cardIndex] = el;
+                  }}
+                  className="flex min-h-0 flex-1 items-end overflow-hidden"
+                >
                   <div className="grid w-full grid-cols-8 place-items-center gap-2 sm:gap-3.5">
                     {Array.from({ length: 100 }).map((_, index) => {
                       const isActive = index < card.activeDots;
@@ -359,10 +394,7 @@ export default function DotGridSlider() {
           className="group inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-black px-7 py-3.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-gray-800 active:scale-95"
         >
           Join Waitlist
-
-          <ArrowRight
-            className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
-          />
+          <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
         </button>
       </div>
 
@@ -450,10 +482,7 @@ export default function DotGridSlider() {
               </p>
 
               {/* Form */}
-              <form
-                onSubmit={handleJoinWaitlist}
-                className="mt-7 space-y-4"
-              >
+              <form onSubmit={handleJoinWaitlist} className="mt-7 space-y-4">
                 <div>
                   <label
                     htmlFor="dotgrid-waitlist-email"
@@ -526,9 +555,7 @@ export default function DotGridSlider() {
         >
           <div
             className={`flex items-start gap-3 rounded-2xl border bg-white p-4 shadow-xl ${
-              toast.type === "success"
-                ? "border-green-100"
-                : "border-red-100"
+              toast.type === "success" ? "border-green-100" : "border-red-100"
             }`}
           >
             <div
