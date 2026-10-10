@@ -131,6 +131,23 @@ function ProgressCircle() {
   );
 }
 
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "CoFinder",
+  url: "https://cofinder.app",
+  description:
+    "Connect with ambitious founders and builders, find collaborators, and build meaningful projects together.",
+  inLanguage: "en-IN",
+  publisher: {
+    "@type": "Organization",
+    name: "CoFinder",
+    url: "https://cofinder.app",
+  },
+};
+
+
 export default function CofinderLanding() {
   const [activeTab, setActiveTab] = useState<"founder" | "builder">("founder");
 
@@ -213,6 +230,12 @@ export default function CofinderLanding() {
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased overflow-hidden">
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+      }}
+    />
       {/* Background Decorative Blur Gradients */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] pointer-events-none -z-10 overflow-hidden">
         <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-indigo-200/40 rounded-full blur-[120px]" />
