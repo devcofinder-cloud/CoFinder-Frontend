@@ -1,7 +1,8 @@
+
 "use client";
 
 import React from "react";
-import { Check, X } from "lucide-react";
+import { Check, X, Minus } from "lucide-react";
 
 type StatusValue = boolean | "partial";
 
@@ -13,231 +14,165 @@ type ComparisonRow = {
 };
 
 const comparisonData: ComparisonRow[] = [
-  {
-    aspect: "0 Barrier to Entry",
-    cofinder: true,
-    networking: false,
-    accelerators: false,
-  },
-  {
-    aspect: "Idea First Matching",
-    cofinder: true,
-    networking: false,
-    accelerators: "partial",
-  },
-  {
-    aspect: "Incognito matching",
-    cofinder: true,
-    networking: false,
-    accelerators: true,
-  },
-  {
-    aspect: "Zero Pedigree Bias",
-    cofinder: true,
-    networking: false,
-    accelerators: false,
-  },
-  {
-    aspect: "Psychometric Vetting",
-    cofinder: true,
-    networking: false,
-    accelerators: false,
-  },
-  {
-    aspect: "No Cold Pitching",
-    cofinder: true,
-    networking: false,
-    accelerators: false,
-  },
-  {
-    aspect: "First Time Founder Friendly",
-    cofinder: true,
-    networking: false,
-    accelerators: "partial",
-  },
-  {
-    aspect: "High signal/ Low Spam",
-    cofinder: true,
-    networking: false,
-    accelerators: true,
-  },
+  { aspect: "Zero Barrier to Entry", cofinder: true, networking: false, accelerators: false },
+  { aspect: "Idea-First Matching", cofinder: true, networking: false, accelerators: "partial" },
+  { aspect: "Incognito Matching", cofinder: true, networking: false, accelerators: true },
+  { aspect: "Zero Pedigree Bias", cofinder: true, networking: false, accelerators: false },
+  { aspect: "Psychometric Vetting", cofinder: true, networking: false, accelerators: false },
+  { aspect: "No Cold Pitching", cofinder: true, networking: false, accelerators: false },
+  { aspect: "First-Time Founder Friendly", cofinder: true, networking: false, accelerators: "partial" },
+  { aspect: "High Signal, Low Spam", cofinder: true, networking: false, accelerators: true },
 ];
+
+function Status({ value, featured = false }: { value: StatusValue; featured?: boolean }) {
+  if (value === "partial") {
+    return (
+      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+        featured ? "bg-white/10 text-white/70" : "bg-neutral-200/70 text-neutral-500"
+      }`}>
+        
+        Partial
+      </span>
+    );
+  }
+
+  if (value) {
+    return (
+      <span className={`flex h-9 w-9 items-center justify-center rounded-full ${
+        featured ? "bg-white text-black" : "bg-neutral-900 text-white"
+      }`}>
+        <Check size={19} strokeWidth={2.5} />
+      </span>
+    );
+  }
+
+  return (
+    <span className={`flex h-9 w-9 items-center justify-center rounded-full ${
+      featured ? "bg-white/10 text-white/35" : "bg-neutral-200/70 text-neutral-400"
+    }`}>
+      <X size={18} strokeWidth={2.2} />
+    </span>
+  );
+}
 
 export default function WhyCoFinder() {
   return (
-    <section className="relative overflow-hidden bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-      <div className="mx-auto max-w-7xl">
-        {/* Heading */}
-        <div className="mb-10 max-w-3xl sm:mb-14 mx-auto">
-          
-          <h2 className="text-4xl text-center font-semibold tracking-[-0.04em] text-black sm:text-5xl lg:text-6xl">
-            Why choose others
-            <br />
-            <span className="text-neutral-400">When math is mathing</span>
+    <section className="relative overflow-hidden bg-white px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-28">
+      <div className="mx-auto max-w-[1440px]">
+        <div className="mx-auto mb-12 max-w-3xl text-center sm:mb-16">
+          <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-neutral-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-600">
+            <span className="h-2 w-2 rounded-full bg-black" />
+            The CoFinder Difference
+          </span>
+
+          <h2 className="text-4xl font-semibold leading-[1.08] tracking-[-0.055em] text-black sm:text-5xl lg:text-7xl">
+            Why choose others?
+            <span className="mt-2 block text-neutral-400">
+              When the right fit matters.
+            </span>
           </h2>
 
-          <p className="mt-4 max-w-xl text-center text-sm leading-7 text-neutral-500 sm:text-base">
+          <p className="mx-auto mt-6 max-w-2xl text-sm leading-7 text-neutral-500 sm:text-base sm:leading-8">
             Most networking is built around who you know. CoFinder is built
-            around what you want to build.
+            around what you want to build — and who can build it with you.
           </p>
         </div>
 
-        {/* Comparison */}
-        <div className="flex items-start justify-center gap-1 overflow-x-auto pb-2 sm:gap-2 lg:gap-3">
-          {/* 1. ASPECTS */}
-          <div className="mt-7 h-[500px] w-[80px] shrink-0 overflow-hidden rounded-l-[22px] border border-neutral-200 bg-[#eeeeee] p-2 sm:w-[220px] lg:w-[240px]">
-            {/* Header */}
-            <div className="flex h-[68px] items-center border-b border-black/5 px-4 sm:px-6">
-              <div className="h-5" />
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white sm:rounded-3xl">
+          <div className="grid grid-cols-[minmax(130px,1.5fr)_repeat(3,minmax(0,1fr))] sm:grid-cols-[minmax(220px,1.5fr)_repeat(3,minmax(0,1fr))]">
+            <div className="flex min-h-[90px] items-end bg-neutral-50 px-3 pb-5 sm:px-7 lg:px-9">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-400 sm:text-xs sm:tracking-[0.16em]">
+                What matters
+              </span>
             </div>
 
-            {/* Rows */}
-            <div>
-              {comparisonData.map((row, index) => (
-                <div
-                  key={row.aspect}
-                  className={`flex h-[53px] items-center ${
-                    index !== comparisonData.length - 1
-                      ? "border-b border-black/5"
-                      : ""
-                  }`}
-                >
-                  <span className="text-[11px] font-medium leading-tight text-neutral-700 sm:text-[13px]">
+            <div className="flex min-h-[90px] flex-col items-center justify-center gap-2 border-l border-neutral-200 bg-black px-1 py-4 text-white sm:gap-3 sm:px-3">
+              <img
+                src="/images/logo.png"
+                alt="CoFinder"
+                className="h-7 w-7 object-contain brightness-0 invert sm:h-10 sm:w-10"
+              />
+              <span className="text-xs font-semibold tracking-tight sm:text-base">CoFinder</span>
+              <span className="rounded-full bg-white px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-black sm:px-3 sm:text-[10px]">
+                Built different
+              </span>
+            </div>
+
+            <div className="flex min-h-[90px] items-center justify-center px-1 py-3 text-center sm:px-4">
+              <h3 className="text-[10px] font-semibold leading-tight text-neutral-700 sm:text-sm lg:text-base">
+                Informal
+                <span className="block">Networking</span>
+              </h3>
+            </div>
+
+            <div className="flex min-h-[90px] items-center justify-center border-l border-neutral-100 px-1 py-3 text-center sm:px-4">
+              <h3 className="text-[10px] font-semibold leading-tight text-neutral-700 sm:text-sm lg:text-base">
+                Elite
+                <span className="block">Accelerators</span>
+              </h3>
+            </div>
+
+            {comparisonData.map((row, index) => (
+              <React.Fragment key={row.aspect}>
+                <div className={`flex min-h-[64px] items-center border-t border-neutral-200 px-3 py-3 sm:min-h-[72px] sm:px-7 lg:px-9 ${
+                  index % 2 === 0 ? "bg-neutral-50/70" : "bg-white"
+                }`}>
+                  <span className="text-[11px] font-medium leading-snug text-neutral-800 sm:text-sm lg:text-[15px]">
                     {row.aspect}
                   </span>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* 2. COFINDER */}
-          <div className="h-[540px] w-[80px] shrink-0 overflow-hidden rounded-[22px] bg-black text-white sm:w-[300px] lg:w-[360px]">
-            {/* Header */}
-            <div className="flex h-[78px] items-center border-b border-white/10 bg-gray-200 px-4 sm:px-6">
-              <div className="flex items-center gap-3">
-                <img
-                  src="/images/logo.png"
-                  alt="CoFinder"
-                  className="h-8 w-8 object-contain sm:h-9 sm:w-9"
-                />
-              </div>
-            </div>
-
-            {/* Rows */}
-            <div>
-              {comparisonData.map((row, index) => (
-                <div
-                  key={row.aspect}
-                  className={`flex h-[53px] items-center px-4 sm:px-6 ${
-                    index !== comparisonData.length - 1
-                      ? "border-b border-white/10"
-                      : ""
-                  }`}
-                >
-                  {row.cofinder === "partial" ? (
-                    <span className="text-xs font-semibold text-white mx-auto">
-                      Partial
-                    </span>
-                  ) : row.cofinder ? (
-                    <span className="flex h-7 w-7 items-center justify-center text-white mx-auto">
-                      <Check size={25} strokeWidth={2.8} />
-                    </span>
-                  ) : (
-                    <span className="flex h-14 w-14 items-center mx-auto justify-center rounded-full bg-white/10 text-white/50">
-                      <X size={24} strokeWidth={2.5} />
-                    </span>
-                  )}
+                <div className={`flex min-h-[64px] items-center justify-center border-t border-white/10 px-1 py-3 sm:min-h-[72px] ${
+                  index % 2 === 0 ? "bg-neutral-900" : "bg-black"
+                }`}>
+                  <Status value={row.cofinder} featured />
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* 3. INFORMAL NETWORKING */}
-          <div className="mt-7 h-[500px] w-[80px] shrink-0 overflow-hidden  bg-[#eeeeee] sm:w-[270px] lg:w-[310px]">
-            {/* Header */}
-            <div className="flex h-[68px] items-center justify-center  bg-white px-2">
-              <h3 className="text-center text-[11px] font-semibold tracking-tight text-neutral-900 sm:text-base">
-                Informal Networking
-              </h3>
-            </div>
-
-            {/* Rows */}
-            <div>
-              {comparisonData.map((row, index) => (
-                <div
-                  key={row.aspect}
-                  className={`flex h-[53px] items-center px-4 sm:px-6 ${
-                    index !== comparisonData.length - 1
-                      ? "border-b border-black/5"
-                      : ""
-                  }`}
-                >
-                  {row.networking === "partial" ? (
-                    <span className="text-xs font-semibold text-neutral-500 mx-auto">
-                      Partial
-                    </span>
-                  ) : row.networking ? (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full mx-auto bg-neutral-200 text-neutral-700">
-                      <Check size={20} strokeWidth={2.8} />
-                    </span>
-                  ) : (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full mx-auto bg-neutral-200/70 text-neutral-400">
-                      <X size={20} strokeWidth={2.5} />
-                    </span>
-                  )}
+                <div className={`flex min-h-[64px] items-center justify-center border-l border-t border-neutral-200 px-1 py-3 sm:min-h-[72px] sm:px-2 ${
+                  index % 2 === 0 ? "bg-white" : "bg-neutral-50/70"
+                }`}>
+                  <Status value={row.networking} />
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* 4. ELITE ACCELERATORS */}
-          <div className="mt-7 h-[500px] w-[80px] shrink-0 overflow-hidden rounded-r-[22px] bg-[#eeeeee] sm:w-[270px] lg:w-[310px]">
-            {/* Header */}
-            <div className="flex h-[68px] items-center justify-center border-b border-black/5 bg-white px-2">
-              <h3 className="text-center text-[11px] font-semibold tracking-tight text-neutral-900 sm:text-base">
-                Elite Accelerators
-              </h3>
-            </div>
-
-            {/* Rows */}
-            <div>
-              {comparisonData.map((row, index) => (
-                <div
-                  key={row.aspect}
-                  className={`flex h-[53px] items-center px-4 sm:px-6 ${
-                    index !== comparisonData.length - 1
-                      ? "border-b border-black/5"
-                      : ""
-                  }`}
-                >
-                  {row.accelerators === "partial" ? (
-                    <span className="text-xs font-semibold text-neutral-500">
-                      Partial
-                    </span>
-                  ) : row.accelerators ? (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200 text-neutral-700 mx-auto">
-                      <Check size={20} strokeWidth={2.8} />
-                    </span>
-                  ) : (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200/70 text-neutral-400 mx-auto">
-                      <X size={20} strokeWidth={2.5} />
-                    </span>
-                  )}
+                <div className={`flex min-h-[64px] items-center justify-center border-l border-t border-neutral-200 px-1 py-3 sm:min-h-[72px] sm:px-2 ${
+                  index % 2 === 0 ? "bg-white" : "bg-neutral-50/70"
+                }`}>
+                  <Status value={row.accelerators} />
                 </div>
-              ))}
-            </div>
+              </React.Fragment>
+            ))}
           </div>
         </div>
 
-        {/* Bottom statement */}
-        <div className="mt-12 border-t border-neutral-200 pt-8 sm:mt-14 sm:pt-9">
-          <p className="text-xl font-medium tracking-tight text-black sm:text-2xl">
-            You don't need another networking event.
-          </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs text-neutral-500 sm:mt-6">
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-black" />
+            Available
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-neutral-300" />
+            Not available
+          </span>
+          <span className="flex items-center gap-2">
+            <Minus size={13} />
+            Partially available
+          </span>
+        </div>
 
-          <p className="mt-2 text-xl font-medium tracking-tight text-neutral-400 sm:text-2xl">
-            You need the right person to build with.
-          </p>
+        <div className="mt-14 border-t border-neutral-200 pt-8 sm:mt-20 sm:pt-10 lg:flex lg:items-end lg:justify-between">
+          <div>
+            <p className="text-2xl font-semibold leading-tight tracking-[-0.04em] text-black sm:text-3xl lg:text-4xl">
+              You don't need another networking event.
+            </p>
+            <p className="mt-3 text-xl font-medium tracking-tight text-neutral-400 sm:text-2xl lg:text-3xl">
+              You need the right person to build with.
+            </p>
+          </div>
+
+          <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-black lg:mb-1 lg:mt-0">
+            <span className="h-2 w-2 rounded-full bg-black" />
+            Built for what comes next.
+          </div>
         </div>
       </div>
     </section>
