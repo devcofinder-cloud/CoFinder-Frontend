@@ -12,12 +12,16 @@ import {
   addPostComment,
   getPostComments,
   deletePostComment,
-
- 
 } from "../services/dashboard.service";
 import { getProfessionalProfile } from "../services/auth.service";
-import {toggleSavePost, getSavedPosts, togglePostUpvote, getPostVotes,togglePostDownvote,  fetchRecentlyPosted,
-} from '../services/posts.service'
+import {
+  toggleSavePost,
+  getSavedPosts,
+  togglePostUpvote,
+  getPostVotes,
+  togglePostDownvote,
+  fetchRecentlyPosted,
+} from "../services/posts.service";
 
 export interface SearchUser extends User {}
 
@@ -52,8 +56,6 @@ export interface PostAuthor {
   archetype?: string;
 }
 
-
-
 export interface Post {
   _id: string;
   author: PostAuthor;
@@ -76,7 +78,6 @@ export interface Post {
   updatedAt: string;
   isSaved?: boolean;
 }
-
 
 export interface User {
   _id: string;
@@ -204,8 +205,6 @@ interface DashboardState {
   loadingSameArchetypeUsers: boolean;
   loadingNearbyUsers: boolean;
 
-
-
   toggleLike: (postId: string, userId: string) => Promise<any>;
   toggleSave: (postId: string) => Promise<any>;
   fetchSavedPosts: () => Promise<any>;
@@ -228,7 +227,7 @@ interface DashboardState {
   fetchRecommendedUsers: (limit?: number) => Promise<void>;
 
   fetchSameArchetypeUsers: (limit?: number) => Promise<void>;
-    getPostVotes: (postId: string) => Promise<any>;
+  getPostVotes: (postId: string) => Promise<any>;
   toggleUpvote: (postId: string) => Promise<any>;
   toggleDownvote: (postId: string) => Promise<any>;
 
@@ -237,19 +236,19 @@ interface DashboardState {
   loadingSavedPosts: boolean;
 
   recentlyPosted: Post[];
-loadingRecentlyPosted: boolean;
+  loadingRecentlyPosted: boolean;
 
-fetchRecentlyPosted: (page?: number, limit?: number) => Promise<void>;
+  fetchRecentlyPosted: (page?: number, limit?: number) => Promise<void>;
 }
 
-export const dashboardStore = create<DashboardState>((set) => ({
+export const dashboardStore = create<DashboardState>()((set, get) => ({
   posts: [],
   loadingPosts: false,
   post: null,
   loadingPost: false,
-  
-recentlyPosted: [],
-loadingRecentlyPosted: false,
+
+  recentlyPosted: [],
+  loadingRecentlyPosted: false,
   savedPosts: [],
   loadingSavedPosts: false,
 
@@ -477,47 +476,68 @@ loadingRecentlyPosted: false,
   },
 
   toggleLike: async (postId: string, userId: string) => {
+    const updateLike = (post: Post): Post => {
+      if (post._id !== postId) return post;
+
+      const likes = post.likes || [];
+      const alreadyLiked = likes.includes(userId);
+
+      return {
+        ...post,
+        likes: alreadyLiked
+          ? likes.filter((id) => id !== userId)
+          : [...likes, userId],
+      };
+    };
+
+    const current = get();
+
+    const previousLikes = {
+      posts: current.posts.find((p) => p._id === postId)?.likes,
+      userPosts: current.userPosts.find((p) => p._id === postId)?.likes,
+      recentlyPosted: current.recentlyPosted.find((p) => p._id === postId)
+        ?.likes,
+      post: current.post?._id === postId ? current.post.likes : undefined,
+    };
+
+    set((state) => ({
+      posts: state.posts.map(updateLike),
+      userPosts: state.userPosts.map(updateLike),
+      recentlyPosted: state.recentlyPosted.map(updateLike),
+      post: state.post ? updateLike(state.post) : null,
+    }));
+
     try {
-      const res = await togglePostLike(postId);
+      const response = await togglePostLike(postId);
 
-      if (res.success) {
-        const { liked, likesCount } = res.data;
-
-        set((state) => {
-          const updatePost = (post: Post): Post => {
-            if (post._id !== postId) {
-              return post;
-            }
-
-            let updatedLikes = [...post.likes];
-
-            if (liked) {
-              if (!updatedLikes.includes(userId)) {
-                updatedLikes.push(userId);
-              }
-            } else {
-              updatedLikes = updatedLikes.filter((id) => id !== userId);
-            }
-
-            return {
-              ...post,
-              likes: updatedLikes,
-            };
-          };
-
-          return {
-            posts: state.posts.map(updatePost),
-
-            userPosts: state.userPosts.map(updatePost),
-
-            post:
-              state.post?._id === postId ? updatePost(state.post) : state.post,
-          };
-        });
+      if (!response.success) {
+        throw new Error("Failed to update like");
       }
 
-      return res;
+      return response;
     } catch (error) {
+      set((state) => ({
+        posts: state.posts.map((p) =>
+          p._id === postId && previousLikes.posts !== undefined
+            ? { ...p, likes: previousLikes.posts }
+            : p,
+        ),
+        userPosts: state.userPosts.map((p) =>
+          p._id === postId && previousLikes.userPosts !== undefined
+            ? { ...p, likes: previousLikes.userPosts }
+            : p,
+        ),
+        recentlyPosted: state.recentlyPosted.map((p) =>
+          p._id === postId && previousLikes.recentlyPosted !== undefined
+            ? { ...p, likes: previousLikes.recentlyPosted }
+            : p,
+        ),
+        post:
+          state.post?._id === postId && previousLikes.post !== undefined
+            ? { ...state.post, likes: previousLikes.post }
+            : state.post,
+      }));
+
       console.error("Toggle like error:", error);
       throw error;
     }
@@ -648,36 +668,29 @@ loadingRecentlyPosted: false,
   },
 
   fetchSavedPosts: async () => {
-  try {
-    set({ loadingSavedPosts: true });
+    try {
+      set({ loadingSavedPosts: true });
 
-    const res = await getSavedPosts();
+      const res = await getSavedPosts();
 
-    const posts =
-      res.data?.data ||
-      res.data ||
-      [];
+      const posts = res.data?.data || res.data || [];
 
-    set({
-      savedPosts: Array.isArray(posts)
-        ? posts
-        : [],
-    });
+      set({
+        savedPosts: Array.isArray(posts) ? posts : [],
+      });
 
-    return posts;
-  } catch (error) {
-    console.error(
-      "Fetch saved posts error:",
-      error
-    );
+      return posts;
+    } catch (error) {
+      console.error("Fetch saved posts error:", error);
 
-    throw error;
-  } finally {
-    set({
-      loadingSavedPosts: false,
-    });
-  }
-},  getPostVotes: async (postId: string) => {
+      throw error;
+    } finally {
+      set({
+        loadingSavedPosts: false,
+      });
+    }
+  },
+  getPostVotes: async (postId: string) => {
     try {
       const res = await getPostVotes(postId);
 
@@ -693,12 +706,7 @@ loadingRecentlyPosted: false,
       const res = await togglePostUpvote(postId);
 
       if (res.success) {
-        const {
-          upvoted,
-          downvoted,
-          upvotesCount,
-          downvotesCount,
-        } = res.data;
+        const { upvoted, downvoted, upvotesCount, downvotesCount } = res.data;
 
         set((state) => {
           const updatePost = (post: Post): Post => {
@@ -723,9 +731,7 @@ loadingRecentlyPosted: false,
             posts: state.posts.map(updatePost),
             userPosts: state.userPosts.map(updatePost),
             post:
-              state.post?._id === postId
-                ? updatePost(state.post)
-                : state.post,
+              state.post?._id === postId ? updatePost(state.post) : state.post,
           };
         });
       }
@@ -742,12 +748,7 @@ loadingRecentlyPosted: false,
       const res = await togglePostDownvote(postId);
 
       if (res.success) {
-        const {
-          upvoted,
-          downvoted,
-          upvotesCount,
-          downvotesCount,
-        } = res.data;
+        const { upvoted, downvoted, upvotesCount, downvotesCount } = res.data;
 
         set((state) => {
           const updatePost = (post: Post): Post => {
@@ -768,9 +769,7 @@ loadingRecentlyPosted: false,
             posts: state.posts.map(updatePost),
             userPosts: state.userPosts.map(updatePost),
             post:
-              state.post?._id === postId
-                ? updatePost(state.post)
-                : state.post,
+              state.post?._id === postId ? updatePost(state.post) : state.post,
           };
         });
       }
@@ -783,30 +782,27 @@ loadingRecentlyPosted: false,
   },
 
   fetchRecentlyPosted: async (page = 1, limit = 10) => {
-  try {
-    set({ loadingRecentlyPosted: true });
+    try {
+      set({ loadingRecentlyPosted: true });
 
-    const response = await fetchRecentlyPosted(page, limit);
+      const response = await fetchRecentlyPosted(page, limit);
 
-    const posts =
-      response.data?.posts ||
-      response.data?.data ||
-      response.data ||
-      [];
+      const posts =
+        response.data?.posts || response.data?.data || response.data || [];
 
-    set({
-      recentlyPosted: Array.isArray(posts) ? posts : [],
-    });
-  } catch (error) {
-    console.error("Failed to fetch recently posted:", error);
+      set({
+        recentlyPosted: Array.isArray(posts) ? posts : [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch recently posted:", error);
 
-    set({
-      recentlyPosted: [],
-    });
-  } finally {
-    set({
-      loadingRecentlyPosted: false,
-    });
-  }
-},
+      set({
+        recentlyPosted: [],
+      });
+    } finally {
+      set({
+        loadingRecentlyPosted: false,
+      });
+    }
+  },
 }));

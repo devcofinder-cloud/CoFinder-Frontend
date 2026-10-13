@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import {
@@ -12,13 +13,14 @@ import {
   FileText,
   ArrowUpRight,
 } from "lucide-react";
-import { dashboardStore } from "@/app/store/dashboardStore";
 import { useRouter } from "next/navigation";
+import { dashboardStore } from "@/app/store/dashboardStore";
 
 const getTimeAgo = (date: string) => {
-  const now = new Date().getTime();
-  const created = new Date(date).getTime();
-  const diff = Math.floor((now - created) / 1000);
+  const diff = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+  );
 
   if (diff < 60) return "Just now";
 
@@ -40,23 +42,47 @@ const getMediaIcon = (type: string) => {
   return <FileText size={14} />;
 };
 
-export default function RecentlyPosted() {
+interface RecentlyPostedProps {
+  userId: string;
+}
+
+export default function RecentlyPosted({
+  userId,
+}: RecentlyPostedProps) {
+  const router = useRouter();
+
   const {
     recentlyPosted,
     loadingRecentlyPosted,
     fetchRecentlyPosted,
+    toggleLike,
   } = dashboardStore();
 
+  const [pendingLikes, setPendingLikes] = useState<string[]>([]);
+
   useEffect(() => {
-    fetchRecentlyPosted();
+    void fetchRecentlyPosted(1, 10);
   }, [fetchRecentlyPosted]);
 
-  const approuter = useRouter()
+  const handleLike = async (postId: string) => {
+    if (!userId || pendingLikes.includes(postId)) return;
+
+    setPendingLikes((current) => [...current, postId]);
+
+    try {
+      await toggleLike(postId, userId);
+    } catch {
+      // Store restores the previous state if the API fails.
+    } finally {
+      setPendingLikes((current) =>
+        current.filter((id) => id !== postId)
+      );
+    }
+  };
 
   return (
-    <section className="w-full">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
+    <section className="w-full min-w-0">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-black text-white">
@@ -73,13 +99,12 @@ export default function RecentlyPosted() {
           </p>
         </div>
 
-        <div className="hidden rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-[11px] font-semibold text-zinc-600 sm:block">
+        <span className="hidden rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-[11px] font-semibold text-zinc-600 sm:block">
           Last 7 Days
-        </div>
+        </span>
       </div>
 
-      {/* Main Outer Container */}
-      <div className="w-full max-w-3xl rounded-3xl border border-zinc-200 bg-zinc-50 p-2 shadow-md sm:p-3">
+      <div className="w-full min-w-0 max-w-3xl rounded-3xl border border-zinc-200 bg-zinc-50 p-2 sm:p-3">
         {loadingRecentlyPosted ? (
           <div className="space-y-3">
             {[1, 2, 3].map((item) => (
@@ -89,7 +114,6 @@ export default function RecentlyPosted() {
               >
                 <div className="flex gap-3">
                   <div className="h-10 w-10 shrink-0 rounded-full bg-zinc-200" />
-
                   <div className="flex-1">
                     <div className="h-3 w-28 rounded bg-zinc-200" />
                     <div className="mt-2 h-2.5 w-20 rounded bg-zinc-100" />
@@ -116,135 +140,183 @@ export default function RecentlyPosted() {
             </h3>
 
             <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-zinc-500">
-              There haven't been any posts shared during the last 7 days.
+              There haven&apos;t been any posts shared during the last 7 days.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {recentlyPosted.map((post, index) => (
-              <motion.article
-                key={post._id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.3,
-                  delay: index * 0.05,
-                }}
-                className="group w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:border-zinc-300 hover:shadow-md"
-              >
-                <div  className="w-full max-w-2xl p-4 sm:p-5">
-                  {/* Author */}
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-100">
-                      {post.author?.profileImage ? (
-                        <Image
-                          src={post.author.profileImage}
-                          alt={post.author.name || "User"}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-black text-sm font-bold text-white">
-                          {(post.author?.name || "U")
-                            .charAt(0)
-                            .toUpperCase()}
-                        </div>
-                      )}
-                    </div>
+            {recentlyPosted.map((post, index) => {
+              const liked = (post.likes || []).includes(userId);
+              const isPending = pendingLikes.includes(post._id);
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <h3 className="min-w-0 truncate text-sm font-bold text-black">
-                          {post.author?.name || "Unknown User"}
-                        </h3>
-
-                        {post.author?.archetype && (
-                          <span className="hidden shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-semibold text-zinc-600 sm:inline-block">
-                            {post.author.archetype}
-                          </span>
+              return (
+                <motion.article
+                  key={post._id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: Math.min(index * 0.05, 0.2),
+                  }}
+                  className="group w-full min-w-0 overflow-hidden rounded-2xl border border-zinc-200 bg-white transition-colors duration-200 hover:border-zinc-300"
+                >
+                  <div className="w-full min-w-0 p-4 sm:p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-100">
+                        {post.author?.profileImage ? (
+                          <Image
+                            src={post.author.profileImage}
+                            alt={post.author.name || "User"}
+                            fill
+                            sizes="40px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-black text-sm font-bold text-white">
+                            {(post.author?.name || "U")
+                              .charAt(0)
+                              .toUpperCase()}
+                          </div>
                         )}
                       </div>
 
-                      <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-400">
-                        <Clock3 size={10} />
-                        <span>{getTimeAgo(post.createdAt)}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <h3 className="min-w-0 truncate text-sm font-bold text-black">
+                            {post.author?.name || "Unknown User"}
+                          </h3>
+
+                          {post.author?.archetype && (
+                            <span className="hidden shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-semibold text-zinc-600 sm:inline-block">
+                              {post.author.archetype}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-0.5 flex items-center gap-1 text-[10px] text-zinc-400">
+                          <Clock3 size={10} />
+                          <span>{getTimeAgo(post.createdAt)}</span>
+                        </div>
                       </div>
+
+                      <button
+                        type="button"
+                        aria-label="Open post"
+                        onClick={() => router.push(`/post/${post._id}`)}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-black hover:text-white"
+                      >
+                        <ArrowUpRight size={15} />
+                      </button>
                     </div>
 
-                    <button className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-black hover:text-white">
-                      <ArrowUpRight size={15} />
-                    </button>
+                    {post.content && (
+                      <div
+                        onClick={() => router.push(`/post/${post._id}`)}
+                        className="mt-4 max-w-xl cursor-pointer"
+                      >
+                        <p className="line-clamp-2 whitespace-pre-line break-words text-sm leading-6 text-zinc-700">
+                          {post.content}
+                        </p>
+                      </div>
+                    )}
+
+                    {post.media?.length > 0 && (
+                      <div className="mt-4 max-w-xl overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
+                        {post.media.length === 1 &&
+                        post.media[0]?.type === "image" &&
+                        !post.media[0]?.url
+                          ?.toLowerCase()
+                          .includes(".pdf") ? (
+                          <div
+                            onClick={() =>
+                              router.push(`/post/${post._id}`)
+                            }
+                            className="relative aspect-[16/9] w-full cursor-pointer"
+                          >
+                            <Image
+                              src={post.media[0].url}
+                              alt={post.media[0]?.name || "Post image"}
+                              fill
+                              sizes="(max-width: 768px) 100vw, 600px"
+                              className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 p-2">
+                            {post.media.slice(0, 3).map((media, i) => (
+                              <button
+                                type="button"
+                                key={`${media.publicId}-${i}`}
+                                onClick={() =>
+                                  router.push(`/post/${post._id}`)
+                                }
+                                className="flex min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600 transition hover:border-zinc-400"
+                              >
+                                {getMediaIcon(media.type)}
+                                <span className="max-w-[140px] truncate">
+                                  {media.name || `${media.type} file`}
+                                </span>
+                              </button>
+                            ))}
+
+                            {post.media.length > 3 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  router.push(`/post/${post._id}`)
+                                }
+                                className="flex items-center rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white"
+                              >
+                                +{post.media.length - 3} more
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex max-w-xl items-center justify-between border-t border-zinc-100 pt-3">
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          disabled={!userId || isPending}
+                          onClick={() => void handleLike(post._id)}
+                          aria-label={liked ? "Unlike post" : "Like post"}
+                          aria-pressed={liked}
+                          className={`flex items-center gap-1.5 rounded-md text-xs transition-colors duration-150 disabled:cursor-not-allowed ${
+                            liked
+                              ? "font-semibold text-rose-600"
+                              : "text-zinc-500 hover:text-rose-600"
+                          }`}
+                        >
+                          <Heart
+                            size={16}
+                            fill={liked ? "currentColor" : "none"}
+                            className="transition-transform duration-150"
+                          />
+                          <span>{post.likes?.length || 0}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            router.push(`/post/${post._id}`)
+                          }
+                          className="flex items-center gap-1.5 text-xs text-zinc-500 transition hover:text-black"
+                        >
+                          <MessageCircle size={15} />
+                          <span>{post.commentsCount || 0}</span>
+                        </button>
+                      </div>
+
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                        Recent
+                      </span>
+                    </div>
                   </div>
-
-                  {/* Content */}
-                  {post.content && (
-                    <div onClick={()=>approuter.push(`/post/${post._id}`)} className="mt-4 max-w-xl">
-                      <p className="line-clamp-2 overflow-hidden text-ellipsis whitespace-pre-line break-words text-sm leading-6 text-zinc-700">
-                        {post.content}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Media */}
-                {post.media?.length > 0 && (
-  <div className="mt-4 max-w-xl overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50">
-    {post.media.length === 1 &&
-    post.media[0]?.type === "image" &&
-    !post.media[0]?.url?.toLowerCase().includes(".pdf") ? (
-      <div className="relative aspect-[16/9] w-full">
-        <Image
-          src={post.media[0].url}
-          alt={post.media[0]?.name || "Post image"}
-          fill
-          className="object-cover transition duration-500 group-hover:scale-[1.02]"
-        />
-      </div>
-    ) : (
-      <div className="flex flex-wrap gap-2 p-2">
-        {post.media.slice(0, 3).map((media, mediaIndex) => (
-          <div
-            key={`${media.publicId}-${mediaIndex}`}
-            className="flex min-w-0 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600"
-          >
-            {getMediaIcon(media.type)}
-
-            <span className="max-w-[140px] truncate">
-              {media.name || `${media.type} file`}
-            </span>
-          </div>
-        ))}
-
-        {post.media.length > 3 && (
-          <div className="flex items-center rounded-lg bg-black px-3 py-2 text-xs font-semibold text-white">
-            +{post.media.length - 3} more
-          </div>
-        )}
-      </div>
-    )}
-  </div>
-)}
-
-                  {/* Stats */}
-                  <div className="mt-4 flex max-w-xl items-center justify-between border-t border-zinc-100 pt-3">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                        <Heart size={15} />
-                        <span>{post.likes?.length || 0}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                        <MessageCircle size={15} />
-                        <span>{post.commentsCount || 0}</span>
-                      </div>
-                    </div>
-
-                    <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-                      Recent
-                    </span>
-                  </div>
-                </div>
-              </motion.article>
-            ))}
+                </motion.article>
+              );
+            })}
           </div>
         )}
       </div>

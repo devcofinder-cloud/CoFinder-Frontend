@@ -381,7 +381,7 @@ export default function DashboardPage() {
             </section>
 
 
-            <RecentlyPosted/>
+            <RecentlyPosted userId={user?._id || ""} />
 
             <div className="min-w-0">
               <RecommendedFounders />
