@@ -1,4 +1,6 @@
 "use client";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -280,9 +282,6 @@ export default function AIPage() {
             </div>
           </header>
 
-
-
-
           {/* ================================================= */}
           {/* CHAT AREA */}
           {/* ================================================= */}
@@ -408,7 +407,15 @@ export default function AIPage() {
                                 : "max-w-[88%] pt-1 text-[13px] leading-6 text-zinc-700 sm:max-w-[75%]"
                             }
                           >
-                            {message.content}
+                            {isUser ? (
+                              message.content
+                            ) : (
+                              <div className="prose prose-sm max-w-none text-[13px] leading-7 text-zinc-700 prose-headings:mb-3 prose-headings:mt-5 prose-headings:font-semibold prose-headings:text-zinc-950 prose-p:my-3 prose-p:leading-7 prose-ul:my-3 prose-ul:list-disc prose-ul:pl-6 prose-ol:my-3 prose-ol:list-decimal prose-ol:pl-6 prose-li:my-1.5 prose-li:pl-1 prose-strong:font-semibold prose-strong:text-zinc-950 prose-a:text-blue-600 prose-a:underline">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {message.content}
+                                </ReactMarkdown>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
